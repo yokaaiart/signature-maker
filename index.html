@@ -596,7 +596,8 @@ const THEMES = {
 };
 const ENCS = { glyph: "文字（読める）", morse: "モールス", rune: "ルーン（読めない）", beat: "リズム（読めない）", beads: "ビーズ（読めない）" };
 const SHAPES = { line: "横ライン", vert: "縦ライン", wave: "波", zigzag: "ジグザグ", converge: "3本の線", twotier: "2段", ucurve: "U字",
-  corner_tl: "角・左上", corner_tr: "角・右上", corner_bl: "角・左下", corner_br: "角・右下", circle: "円", radial: "放射" };
+  corner_tl: "角・左上", corner_tr: "角・右上", corner_bl: "角・左下", corner_br: "角・右下", circle: "円", radial: "放射",
+  heart: "ハート", triangle: "三角", diamond: "ひし形", star: "星" };
 
 /* ---------- encodings: groups (one per character) of items ---------- */
 function encode(enc, text, T, r){
@@ -736,6 +737,52 @@ function corner(an){ return (em, E, T, r) => {
   return { place: "corner", anchor: an };
 }; }
 for (const an of ["tl", "tr", "bl", "br"]) BUILD["corner_" + an] = corner(an);
+
+/* ---------- symbol shapes (heart / triangle / diamond / star) ---------- */
+function heartPts(S, n){ const p = []; for (let i = 0; i <= n; i++){ const a = Math.PI + i / n * Math.PI * 2, s = Math.sin(a);
+  p.push([16 * s * s * s * S, (-(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) - 2.65) * S]); } return p; }
+function starPts(R, k){ const p = []; for (let i = 0; i <= 10; i++){ const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? R * k : R; p.push([rr * Math.cos(a), rr * Math.sin(a)]); } return p; }
+function scalePts(pts, k, cx, cy){ return pts.map(([x, y]) => [cx + (x - cx) * k, cy + (y - cy) * k]); }
+function symFrame(em, pts, T, r, cx, cy, echoK){
+  leadLine(em, Track(pts), 0, Track(pts).L, T, r, "lead");
+  if (T.n !== "ミニマル" && echoK) em.poly(scalePts(pts, echoK, cx, cy), T.thin * 1.4, { dash: `0.1 ${f(18 * T.size)}` });
+  if (T.extras.includes("stars")){ const tr = Track(pts); for (let i = 0; i < 4; i++){ const P = tr.tp(tr.L * (i + r() * .7) / 4), p = P(0, (r() < .5 ? 1 : -1) * (26 + r() * 40) * T.size); em.star(p[0], p[1], (8 + r() * 18) * T.size); } }
+}
+function centerMark(em, x, y, T, k){ const q = 16 * T.size * (k || 1);
+  if (T.ends === "star") em.star(x, y, q * 1.5);
+  else { em.poly([[x, y - q * 1.4], [x + q, y], [x, y + q * 1.4], [x - q, y], [x, y - q * 1.4]], T.thin * 1.4, { join: "round" }); em.fill([[x, y - q * .5], [x + q * .35, y], [x, y + q * .5], [x - q * .35, y]]); } }
+/* emblem above, name on a line below — good for short names */
+function emblem(em, E, T, r, pts, cy, bottom){
+  symFrame(em, pts, T, r, 0, cy, .74); centerMark(em, 0, cy, T, .8);
+  const y = bottom + (46 + E.maxH * .55) * T.size, L = Math.max(E.len + 520, 760);
+  compose(em, line(-L / 2, y, L / 2, y), E, T, r, { pos: .5 });
+  return { place: "round" };
+}
+BUILD.heart = (em, E, T, r) => {
+  if (r() < (E.len < 420 ? .55 : .3)){ const S = 9.5 * T.size; return emblem(em, E, T, r, heartPts(S, 160), 0, 14.35 * S); }
+  const W = Math.max(480, (E.len + 52 * T.size + 120) / .85), S = W / 32, ext = 90 + r() * 90;
+  symFrame(em, heartPts(S, 200), T, r, 0, 0, .8);
+  compose(em, line(-W / 2 - ext, 0, W / 2 + ext, 0), E, T, r, { pos: .5 });
+  return { place: "round" };
+};
+BUILD.triangle = (em, E, T, r) => {
+  const B = Math.max(620, E.len + 380 * Math.max(1, T.size * .8)), h = B * .86, up = r() < .6, sy = up ? -1 : 1;
+  const pts = [[-B / 2, 0], [B / 2, 0], [0, sy * h], [-B / 2, 0]], sides = Track(pts.slice(1));
+  compose(em, line(-B / 2, 0, B / 2, 0), E, T, r, { pos: .5, noEnds: true }); leadLine(em, sides, 0, sides.L, T, r, "lead");
+  const cy = sy * h / 3; if (T.n !== "ミニマル") em.poly(scalePts(pts, .5, 0, cy), T.thin * 1.4, { dash: `0.1 ${f(18 * T.size)}` });
+  centerMark(em, 0, cy + sy * h * .06, T, 1);
+  for (const [x, y] of pts.slice(0, 3)){ const q = 7 * T.size * Math.sqrt(T.weight); em.fill([[x, y - q], [x + q, y], [x, y + q], [x - q, y]]); }
+  if (T.extras.includes("stars")) sparkles(em, Track([[-B / 2, sy * h * .5], [B / 2, sy * h * .5]]), 0, B, T, r, h * .3);
+  return { place: "round" };
+};
+BUILD.diamond = (em, E, T, r) => {
+  if (r() < (E.len < 420 ? .45 : .2)){ const R = 190 * T.size; return emblem(em, E, T, r, [[0, -R * 1.25], [R, 0], [0, R * 1.25], [-R, 0], [0, -R * 1.25]], 0, R * 1.25); }
+  const W = Math.max(600, E.len + 340 * Math.max(1, T.size * .8)), H = W * .62, ext = 80 + r() * 90;
+  symFrame(em, [[-W / 2, 0], [0, -H / 2], [W / 2, 0], [0, H / 2], [-W / 2, 0]], T, r, 0, 0, .78);
+  compose(em, line(-W / 2 - ext, 0, W / 2 + ext, 0), E, T, r, { pos: .5 });
+  return { place: "round" };
+};
+BUILD.star = (em, E, T, r) => { const R = 210 * T.size; return emblem(em, E, T, r, starPts(R, .46), 0, R * .82); };
 function sub(E, a, b){ const groups = E.groups.slice(a, b), flat = []; groups.forEach((g, i) => { if (i) flat.push({ k: "lgap", len: E.lgap }); flat.push(...g); }); return Object.assign({}, E, { groups, flat, len: flat.reduce((s, it) => s + it.len, 0) }); }
 
 function make(o){
@@ -899,8 +946,14 @@ const PUB_RECIPES = [
   { id: "p_cspark", name: "キラキラ角", enc: "glyph", shape: "corner_br", theme: "sparkle", seed: 83, genre: "キラキラ" },
   { id: "p_seal", name: "円形スタンプ", enc: "glyph", shape: "circle", theme: "gothic", seed: 89, genre: "ゴシック" },
   { id: "p_ring", name: "リング", enc: "beads", shape: "circle", theme: "elegant", seed: 97, genre: "読めない" },
-  { id: "p_radial", name: "放射", enc: "morse", shape: "radial", theme: "minimal", seed: 101, genre: "読めない" }
+  { id: "p_radial", name: "放射", enc: "morse", shape: "radial", theme: "minimal", seed: 101, genre: "読めない" },
+  { id: "p_heart", name: "ハート", enc: "glyph", shape: "heart", theme: "sparkle", seed: 7, genre: "記号" },
+  { id: "p_heart2", name: "ハートライン", enc: "glyph", shape: "heart", theme: "minimal", seed: 3, genre: "記号" },
+  { id: "p_tri", name: "トライアングル", enc: "glyph", shape: "triangle", theme: "elegant", seed: 5, genre: "記号" },
+  { id: "p_dia", name: "ダイヤ", enc: "glyph", shape: "diamond", theme: "gothic", seed: 9, genre: "記号" },
+  { id: "p_star", name: "スター", enc: "glyph", shape: "star", theme: "art", seed: 11, genre: "記号" }
 ];
+const SYM_SHAPES = { heart: 1, triangle: 1, diamond: 1, star: 1 };
 const CAT_OF = { line: "line", vert: "vert", corner: "corner", round: "round" };
 function makeBuiltins(name, cs){
   name = (name || "SIGN").trim().slice(0, 20) || "SIGN";
@@ -908,7 +961,7 @@ function makeBuiltins(name, cs){
   for (const r of PUB_RECIPES){
     let g = null; try{ g = SG.make({ text: name, cs: cs || "asis", enc: r.enc, shape: r.shape, theme: r.theme, seed: r.seed }); }catch(e){}
     if (!g) continue;
-    out.push({ id: r.id, name: r.name, cat: CAT_OF[g.place] || "line", genre: r.genre, svg: g.svg, anchor: g.anchor || undefined });
+    out.push({ id: r.id, name: r.name, cat: SYM_SHAPES[r.shape] ? "sym" : (CAT_OF[g.place] || "line"), place: g.place, genre: r.genre, svg: g.svg, anchor: g.anchor || undefined });
   }
   return out;
 }
@@ -925,7 +978,7 @@ const ls = { get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 /* ---------------------------------------------------------------- data */
-const CATS = [["all","すべて"],["line","横ライン"],["vert","縦ライン"],["corner","角"],["round","放射・円"],["gothic","ゴシック"],["custom","自分の署名"]];
+const CATS = [["all","すべて"],["line","横ライン"],["vert","縦ライン"],["corner","角"],["round","放射・円"],["sym","記号"],["gothic","ゴシック"],["custom","自分の署名"]];
 const SWATCHES = [
   ["#1b1b22","墨"],["#2a2d3a","濃いグレー"],["#6f7a99","青みグレー"],["#b8bdcb","銀"],["#ffffff","白"],
   ["#f4e9ff","パール"],["#c9a24b","金"],["#ffb067","オレンジ"],["#ff7fa8","ピンク"],["#d9434f","赤"],
