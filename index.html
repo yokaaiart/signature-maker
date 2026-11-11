@@ -1,0 +1,1970 @@
+<!doctype html><html lang="ja"><head><title>Signature Maker｜名前を入れるだけで作品に重ねるサインがつくれる</title>
+<meta name="description" content="名前やXのIDを入れるだけで、イラストに重ねる署名（サイン）デザインがつくれる無料ツール。画像は端末の外に送信されず、メタデータも消えます。by @yokaAIart">
+<meta property="og:type" content="website"><meta property="og:title" content="Signature Maker"><meta property="og:description" content="名前を入れるだけで、作品に重ねるサインがつくれる。@ や ♡ もOK。画像は端末の外に送信されません。">
+<meta property="og:url" content="https://yokaaiart.github.io/signature-maker/"><meta property="og:image" content="https://yokaaiart.github.io/signature-maker/ogp.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@yokaAIart"><meta name="twitter:image" content="https://yokaaiart.github.io/signature-maker/ogp.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: one stage (the artwork) + one tool panel. Phone: stage sticks on top, panel scrolls under it. Desktop: side by side. */
+:root{
+  --bg:#f1f2f5; --surface:#ffffff; --sunk:#e6e8ee; --line:#d6d9e2;
+  --fg:#171922; --muted:#5b6074; --accent:#4352c4; --accent-ink:#ffffff;
+  --stage:#dfe2ea; --stage-dot:#d2d6e0; --danger:#b3373f;
+  --f-ui:"Noto Sans JP",system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;
+  --f-brand:"Space Grotesk","Noto Sans JP",system-ui,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111218; --surface:#1a1c24; --sunk:#14161d; --line:#2c2f3b;
+  --fg:#eceef4; --muted:#9a9fb3; --accent:#8e9bff; --accent-ink:#0f1120;
+  --stage:#0c0d12; --stage-dot:#181a22; --danger:#ff8b92; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111218; --surface:#1a1c24; --sunk:#14161d; --line:#2c2f3b;
+  --fg:#eceef4; --muted:#9a9fb3; --accent:#8e9bff; --accent-ink:#0f1120;
+  --stage:#0c0d12; --stage-dot:#181a22; --danger:#ff8b92; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:14px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-block:10px 4px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  max-width:1440px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-brand);font-weight:600;letter-spacing:.14em;font-size:15px}
+.brand svg{width:18px;height:26px}
+.chip-store{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+.chip-store b{color:var(--fg);font-weight:500}
+
+.app{display:grid;gap:14px;max-width:1440px;margin:0 auto;
+  padding-block:6px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.stage-col{position:relative;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:4px 6px;display:grid;gap:8px;min-width:0}
+.zoom .pin{width:auto;font-size:11.5px;padding:0 9px;border-radius:999px;color:var(--muted)}
+@media (min-width:920px){.zoom .pin{display:none}}
+/* Phone: split screen. Preview stays on top, the tool panel scrolls on its own underneath. */
+@media (max-width:919px){
+  html,body{height:100%}
+  body{display:flex;flex-direction:column;overflow:hidden}
+  .top{display:none}
+  .app{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;padding-block:8px 0;width:100%}
+  .stage-col{position:relative;flex:none;padding-block:0;gap:6px}
+  .stage-col .stage{height:var(--shpx,40vh)}
+  .bars{display:flex;gap:8px;align-items:center;min-width:0}
+  .bars .strip{flex:0 1 auto;max-width:42%;padding-bottom:0}
+  .bars .layers{flex:1 1 auto;min-width:0}
+  .strip .thumb,.strip .add-img{width:40px;height:40px}
+  .tdel{min-width:18px;height:18px;line-height:16px;font-size:10px;top:2px;right:2px}
+  .grip{display:flex!important}
+  .strip .thumb,.strip .add-img{width:46px;height:46px}
+  .add-img{font-size:10px}
+  .layers{min-height:0}
+  .layer{padding:3px 9px 3px 6px}
+  .panel{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;border-radius:var(--r) var(--r) 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .tabs{position:sticky;top:0;z-index:3;background:var(--surface);border-radius:var(--r) var(--r) 0 0}
+  .hint{display:none}
+}
+.stage{position:relative;height:min(52svh,600px);border-radius:var(--r);overflow:hidden;
+  background:var(--stage) radial-gradient(var(--stage-dot) 1px,transparent 1.2px) 0 0/14px 14px}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.badge{position:absolute;left:10px;top:10px;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--surface);color:var(--muted);border:1px solid var(--line)}
+.hint{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:11.5px;color:var(--muted);pointer-events:none}
+.hint span{background:color-mix(in srgb,var(--surface) 85%,transparent);padding:2px 10px;border-radius:999px}
+
+.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.thumb{position:relative;flex:0 0 auto;width:58px;height:58px;border-radius:8px;border:2px solid transparent;padding:0;overflow:hidden;background:var(--sunk)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb[aria-current="true"]{border-color:var(--accent)}
+.tw{position:relative;flex:0 0 auto}
+.tdel{position:absolute;top:3px;right:3px;min-width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:11px;line-height:20px;padding:0 4px;z-index:2}
+.tdel.armed{color:var(--danger);border-color:var(--danger);padding:0 6px}
+.pad{display:grid;gap:10px;justify-items:center;background:var(--sunk);border:1px solid var(--line);border-radius:14px;padding:12px 14px;width:max-content;max-width:100%}
+.dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:2px}
+.dpad button,.cen button{border:1px solid var(--line);background:var(--surface);border-radius:10px;display:grid;place-items:center;padding:0;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.dpad button:active,.cen button:active{background:var(--accent);color:var(--accent-ink)}
+.dpad svg,.cen svg{width:18px;height:18px}
+.dpad .mid{border-style:dashed;font-size:10.5px;color:var(--muted)}
+.cen{display:flex;gap:8px}
+.cen button{width:44px;height:44px;border-radius:50%}
+.thumb .dot{position:absolute;right:4px;bottom:4px;width:9px;height:9px;transform:rotate(45deg);background:var(--accent);border:1.5px solid var(--surface)}
+.add-img{flex:0 0 auto;width:58px;height:58px;border-radius:8px;border:1.5px dashed var(--line);background:transparent;color:var(--muted);font-size:11px;line-height:1.2}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0;display:flex;flex-direction:column}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;padding:12px 6px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.pane{padding:14px;display:grid;gap:16px;align-content:start}
+.sec{display:grid;gap:8px}
+.sec h3{margin:0;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.06em}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:12.5px}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.sig{position:relative;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 6px 6px;display:grid;gap:2px;text-align:left;align-content:start}
+.sig .nm{font-size:11.5px!important}.sig .gn{font-size:10px!important;line-height:1.2}
+.sig[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.sig .art{aspect-ratio:2/1;margin-bottom:2px;background:var(--fg);-webkit-mask:var(--m) center/var(--ms,contain) no-repeat;mask:var(--m) center/var(--ms,contain) no-repeat}
+.sig .nm{font-size:12px;font-weight:500;line-height:1.3}
+.sig .gn{font-size:10.5px;color:var(--muted)}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-size:13px}
+.btn:hover{border-color:var(--muted)}
+.gen-spin{display:grid;gap:3px;place-items:center;width:100%;padding:12px;border-radius:12px;border:0;background:var(--fg);color:var(--bg)}
+.gen-spin b{font-family:var(--f-brand,inherit);font-size:16px;letter-spacing:.18em}.gen-spin small{font-size:11px;opacity:.7}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.gcard{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px;display:grid;gap:4px;text-align:left}
+.gcard .art{aspect-ratio:16/9;background:var(--fg);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.gcard .gn{font-size:10.5px;color:var(--muted);line-height:1.3}
+.gcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.optrow{display:grid;gap:5px}.optrow>span{font-size:12px;color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:500}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.wide{width:100%}
+.file-btn{position:relative;overflow:hidden}
+.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+.swatches{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);padding:0;background:var(--c)}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+.sw-pick{position:relative;width:30px;height:30px;border-radius:50%;border:1px dashed var(--muted);overflow:hidden}
+.sw-pick input{position:absolute;inset:-6px;width:44px;height:44px;opacity:0;cursor:pointer}
+.sw-pick span{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;color:var(--muted);pointer-events:none}
+
+.slider{display:grid;grid-template-columns:4.5em 1fr 3.6em;gap:10px;align-items:center}
+.slider label{font-size:13px}
+.slider output{font-family:var(--f-brand);font-variant-numeric:tabular-nums;text-align:right;font-size:13px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.pos{display:grid;grid-template-columns:repeat(3,38px);gap:4px}
+.pos button{height:30px;border:1px solid var(--line);background:var(--bg);border-radius:6px;position:relative}
+.pos button::after{content:"";position:absolute;width:7px;height:7px;background:var(--muted);transform:rotate(45deg);
+  left:calc(var(--x) * (100% - 14px) + 3px);top:calc(var(--y) * (100% - 14px) + 3px)}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.note{font-size:12px;color:var(--muted);margin:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:7px 12px;font-size:13px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+select,input[type=text]{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 10px;font-size:13px;min-width:0}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.results img{-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+.results figure{margin:0;display:grid;gap:3px}
+.results img{width:100%;border-radius:6px;border:1px solid var(--line);background:var(--sunk)}
+.results figcaption{font-size:10.5px;color:var(--muted);overflow-wrap:anywhere}
+.empty{border:1px dashed var(--line);border-radius:8px;padding:14px;color:var(--muted);font-size:12.5px}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;
+  background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;max-width:calc(100% - 32px);text-align:center}
+
+.layers{display:flex;gap:6px;overflow-x:auto;align-items:center;padding-bottom:2px;min-height:30px}
+.layer{flex:0 0 auto;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px 4px 7px;font-size:12px}
+.layer[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.layer i{width:24px;height:16px;display:block;background:var(--fg);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.layer.add{border-style:dashed;color:var(--muted)}
+.layer.undo{margin-left:auto;padding:4px 10px}
+.grip{display:none;justify-content:center;align-items:center;height:18px;margin:-2px 0 -4px;cursor:ns-resize;touch-action:none}
+.grip span{width:48px;height:5px;border-radius:3px;background:var(--line)}
+.grip:active span,.grip:focus-visible span{background:var(--accent)}
+.layer.undo + .layer.undo{margin-left:0}
+.layer[disabled]{opacity:.4;cursor:default}
+.zoom{position:absolute;right:8px;top:8px;display:flex;gap:4px;align-items:center;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:3px}
+.zoom button{width:30px;height:30px;border-radius:50%;border:0;background:transparent;font-size:16px;line-height:1;padding:0}
+.zoom button:hover{background:var(--sunk)}
+.zoom .zv{min-width:44px;width:auto;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--muted);border-radius:999px;padding:0 6px}
+.banner{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--accent);border-radius:8px;padding:8px 10px;font-size:12.5px}
+.grad-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cpick{position:relative;width:34px;height:30px;border-radius:8px;border:1px solid var(--line);overflow:hidden;background:var(--c)}
+.cpick input{position:absolute;inset:-6px;width:48px;height:44px;opacity:0;cursor:pointer}
+.tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tpl{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg);display:grid}
+.tpl img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--sunk)}
+.tpl .body{padding:8px;display:grid;gap:6px}
+.tpl .nm{font-size:12.5px;font-weight:500;overflow-wrap:anywhere}
+.tpl .acts{display:flex;gap:6px;flex-wrap:wrap}
+.sm{padding:5px 9px;font-size:12px}
+.del{position:absolute;top:4px;right:4px;min-width:24px;height:24px;border-radius:6px;border:1px solid var(--line);background:var(--surface);font-size:12px;line-height:22px;text-align:center;color:var(--muted);padding:0 4px}
+.del.armed{padding:0 8px;color:var(--danger);border-color:var(--danger)}
+
+@media (min-width:920px){
+  .app{grid-template-columns:minmax(0,1fr) 400px;align-items:start}
+  .stage-col{position:sticky;top:12px}
+  .stage{height:calc(100dvh - 170px);min-height:420px}
+  .panel{position:sticky;top:12px;max-height:calc(100dvh - 40px);overflow:auto}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.ynav{display:flex;gap:2px;background:var(--sunk);border-radius:999px;padding:3px}
+.ynav a{padding:4px 13px;border-radius:999px;font-size:12.5px;color:var(--muted);text-decoration:none;white-space:nowrap}
+.ynav a:hover{color:var(--fg)}
+.ynav a[aria-current="page"]{background:var(--surface);color:var(--fg);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+@media (max-width:919px){.top{display:flex!important;justify-content:center;padding-block:6px 0!important}.top>*:not(.ynav){display:none!important}}
+.paldet summary{cursor:pointer;font-size:13px;padding:6px 0;color:var(--accent);font-weight:500}
+.paldet[open] summary{margin-bottom:8px}
+.namebox{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.credit{margin:6px 0 0;font-size:12px;color:var(--muted)}.credit a{color:var(--accent)}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;font-size:12px;cursor:pointer}
+.about{max-width:560px;width:calc(100% - 32px);border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--fg);padding:18px 20px;max-height:85vh;overflow:auto}
+.about::backdrop{background:rgba(10,12,20,.45)}
+.about h2{font-size:17px;margin:0 0 8px}.about h3{font-size:13px;margin:14px 0 4px;color:var(--muted)}
+.about ul{margin:0;padding-left:1.2em;display:grid;gap:4px;font-size:13px}.about p{font-size:13px;margin:4px 0}.about a{color:var(--accent)}
+.namebox input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:16px;color:var(--fg)}
+</style>
+
+<header class="top">
+  <div class="brand"><svg viewBox="0 0 18 26" aria-hidden="true"><path d="M9 1 17 13 9 25 1 13Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 8 12.3 13 9 18 5.7 13Z" fill="currentColor"/></svg>SIGNATURE MAKER</div>
+  <div class="chip-store" id="storeChip">署名とテンプレの保存先：<b>確認中…</b></div>
+</header>
+
+<main class="app">
+  <section class="stage-col" aria-label="プレビュー">
+    <div class="stage" id="stage">
+      <canvas id="cv" tabindex="0" aria-label="画像と署名のプレビュー。タップで署名を選び、ドラッグで移動、2本指で拡大と回転"></canvas>
+      <div class="badge" id="sampleBadge" hidden>サンプル画像</div>
+      <div class="zoom" aria-label="表示の拡大縮小"><button id="zOut" aria-label="縮小">−</button><button class="zv" id="zFit" aria-label="全体を表示">100%</button><button id="zIn" aria-label="拡大">＋</button></div>
+      <div class="hint" id="hint"><span>タップで選択・ドラッグで移動・2本指で拡大と回転</span></div>
+    </div>
+    <div class="bars"><div class="strip" id="strip"></div>
+    <div class="layers" id="layerBar" aria-label="この画像の署名"></div></div>
+    <div class="grip" id="grip" role="separator" aria-orientation="horizontal" aria-label="上下にドラッグしてプレビューと操作エリアの広さを変える" tabindex="0"><span></span></div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="t-sig" aria-selected="true" aria-controls="p-sig">署名</button>
+      <button role="tab" id="t-gen" aria-selected="false" aria-controls="p-gen">作る</button>
+      <button role="tab" id="t-adj" aria-selected="false" aria-controls="p-adj">調整</button>
+      <button role="tab" id="t-tpl" aria-selected="false" aria-controls="p-tpl">テンプレ</button>
+      <button role="tab" id="t-exp" aria-selected="false" aria-controls="p-exp">書き出し</button>
+    </div>
+
+    <div class="pane" id="p-sig" role="tabpanel" aria-labelledby="t-sig">
+      <div class="sec namebox">
+        <label for="pubName"><b>サインの名前</b></label>
+        <div class="row"><input type="text" id="pubName" maxlength="20" autocomplete="off" placeholder="例：MOMO や @momo_art"><button class="btn sm primary" id="pubNameGo">この名前で作る</button></div>
+        <div class="seg" id="pubCase" style="margin-top:6px"><button data-v="asis">入力どおり</button><button data-v="upper">大文字</button><button data-v="lower">小文字</button></div>
+        <p class="note">入れた名前で、下の署名デザインが全部作り直されます。英数字と記号（@ _ . - / # + ! ? : & ♡ ★）が使えます。XのIDを入れておくと転載対策になります。ひらがななどは、文字が読めないデザインになります。</p>
+        <p class="credit">made by <a href="https://x.com/yokaAIart" target="_blank" rel="noopener">@yokaAIart</a> ・ <button type="button" class="linkbtn" id="aboutBtn">このツールについて・利用について</button></p>
+      </div>
+      <div class="row" id="toAdjRow" hidden><button class="btn sm" id="toAdj">← 調整に戻る</button><button class="btn sm" id="remove">選んでいる署名を外す</button><button class="btn sm" id="removeAll">全部外す</button></div>
+      <div class="banner" id="stackBanner" hidden><span>選んだ署名を、今の署名に<b>重ねます</b></span><button class="btn sm" id="stackCancel">やめる</button></div>
+      <div class="chips" id="cats"></div>
+      <div class="grid" id="sigGrid"></div>
+      <div class="sec">
+        <h3>自分の署名</h3>
+        <div class="row">
+          <label class="btn file-btn">＋ 署名を追加（SVG・PNG）<input type="file" id="addSig" accept=".svg,image/svg+xml,image/png,image/webp" multiple></label>
+        </div>
+        <p class="note" id="storeNote"></p>
+        <div class="row">
+          <button class="btn" id="backupOut">バックアップを保存</button>
+          <label class="btn file-btn">バックアップを読み込む<input type="file" id="backupIn" accept=".json,application/json"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane" id="p-gen" role="tabpanel" aria-labelledby="t-gen" hidden>
+      <p class="note">文字と雰囲気を選ぶと、署名のデザインを作ります。気に入ったものは保存すると「自分の署名」に入ります。</p>
+      <label class="fld" style="display:grid;gap:4px;font-size:12px;color:var(--muted)">文字<input type="text" id="genText" maxlength="20" autocomplete="off" style="font-size:16px"></label>
+      <p class="note" id="genWarn" hidden>「文字」と「モールス」は英数字と記号（@ _ . - / # + ! ? : & ♡ ★）が使えます。それ以外の文字は、ルーンなどの読めない表し方で作ります。</p>
+      <div class="optrow"><span>大文字・小文字（文字の表し方のとき）</span><div class="chips" id="genCase"></div></div>
+      <div class="optrow"><span>表し方</span><div class="chips" id="genEnc"></div></div>
+      <div class="optrow"><span>形</span><div class="chips" id="genShape"></div></div>
+      <div class="optrow"><span>雰囲気</span><div class="chips" id="genTheme"></div></div>
+      <button class="gen-spin" id="genGo"><b>CREATE</b><small>署名を作る（8つ）</small></button>
+      <div class="ggrid" id="genGrid"></div>
+      <div class="sec" id="genAct" hidden>
+        <p class="note">選んだデザインを画像に置いています。色や位置は「調整」で変えられます。</p>
+        <div class="row"><button class="btn sm" id="genLike">これに似たものを作る</button><button class="btn sm" id="genAdj">調整へ →</button></div>
+        <div class="row"><input type="text" id="genName" maxlength="40" placeholder="名前（なくてもOK）" style="flex:1"><button class="btn primary" id="genSave">自分の署名に保存</button></div>
+      </div>
+    </div>
+
+    <div class="pane" id="p-adj" role="tabpanel" aria-labelledby="t-adj" hidden>
+      <div class="empty" id="adjEmpty">「署名」タブで署名を選ぶと、ここで色や大きさを調整できます。<div style="margin-top:10px"><button class="btn primary sm" id="toSig1">署名を選ぶ</button></div></div>
+      <div id="adjBody" class="pane" style="padding:0">
+        <div class="sec">
+          <h3>選んでいる署名</h3>
+          <div class="row">
+            <button class="btn sm" id="lyBack">後ろへ</button>
+            <button class="btn sm" id="lyFront">前へ</button>
+            <button class="btn sm" id="lyDup">複製</button>
+            <button class="btn sm" id="lyAdd">＋ 署名を重ねる</button>
+            <button class="btn sm" id="toSig2">署名を変える</button>
+          </div>
+          <p class="note">下の調整は、選んでいる署名だけに効きます。ほかの署名は、画像の上でタップするか、画像の下の一覧で選んでください。</p>
+        </div>
+        <div class="sec">
+          <h3>色</h3>
+          <div class="swatches" id="swatches"></div>
+          <div class="row">
+            <button class="btn" id="autoColor">背景に合わせて自動</button>
+            <label class="check" id="origWrap" hidden><input type="checkbox" id="origColor">元の色のまま</label>
+          </div>
+        </div>
+        <div class="sec">
+          <h3>グラデーション</h3>
+          <div class="swatches" id="gradSw"></div>
+          <div class="grad-row">
+            <label class="cpick" id="gA" title="はじめの色"><input type="color" aria-label="グラデーションのはじめの色"></label>
+            <label class="cpick" id="gB" title="おわりの色"><input type="color" aria-label="グラデーションのおわりの色"></label>
+            <div class="slider" style="flex:1;min-width:190px"><label for="sAng">向き</label><input type="range" id="sAng" min="0" max="180" step="5"><output id="oAng"></output></div>
+          </div>
+          <p class="note">単色を選ぶと、グラデーションは外れます。</p>
+        </div>
+        <div class="sec">
+          <h3>配色パレット</h3>
+          <details class="paldet"><summary>パレットから選ぶ</summary><div id="palUI"></div></details>
+        </div>
+        <div class="sec">
+          <h3>大きさ・向き</h3>
+          <div class="slider"><label for="sSize">サイズ</label><input type="range" id="sSize" min="4" max="160" step="1"><output id="oSize"></output></div>
+          <div class="slider" id="lwRow"><label for="sLw">線の太さ</label><input type="range" id="sLw" min="20" max="300" step="5"><output id="oLw"></output></div>
+          <div class="slider"><label for="sRot">回転</label><input type="range" id="sRot" min="-180" max="180" step="1"><output id="oRot"></output></div>
+          <div class="slider"><label for="sOp">不透明度</label><input type="range" id="sOp" min="10" max="100" step="1"><output id="oOp"></output></div>
+        </div>
+        <div class="sec">
+          <h3>縁取り</h3>
+          <div class="row"><label class="cpick" id="olPick" title="縁取りの色"><input type="color" aria-label="縁取りの色" value="#ffffff"></label>
+            <div class="slider" style="flex:1;min-width:190px"><label for="sOl">太さ</label><input type="range" id="sOl" min="0" max="20" step="1"><output id="oOl"></output></div></div>
+          <div class="slider"><label for="sOlG">光らせる</label><input type="range" id="sOlG" min="0" max="100" step="1"><output id="oOlG"></output></div>
+          <p class="note">絵の上で署名が見えにくいときに。白い縁取りは暗い絵、黒い縁取りは明るい絵で効きます。</p>
+          <div class="row">
+            <button class="btn" id="flipX">左右反転</button>
+            <button class="btn" id="flipY">上下反転</button>
+            <button class="btn" id="rot90">90°回す</button>
+            <button class="btn" id="full">端から端まで</button>
+          </div>
+        </div>
+        <div class="sec">
+          <h3>位置</h3>
+          <div class="row" style="align-items:flex-start;gap:14px">
+            <div class="pad" aria-label="少しずつ動かす">
+              <div class="dpad">
+                <span></span><button data-mv="0,-1" aria-label="上へ"><svg viewBox="0 0 18 18"><path d="M9 3 16 14H2Z" fill="currentColor"/></svg></button><span></span>
+                <button data-mv="-1,0" aria-label="左へ"><svg viewBox="0 0 18 18"><path d="M3 9 14 2V16Z" fill="currentColor"/></svg></button>
+                <button class="mid" id="stepBtn" aria-label="動かす幅を切り替える">細かく</button>
+                <button data-mv="1,0" aria-label="右へ"><svg viewBox="0 0 18 18"><path d="M15 9 4 2V16Z" fill="currentColor"/></svg></button>
+                <span></span><button data-mv="0,1" aria-label="下へ"><svg viewBox="0 0 18 18"><path d="M9 15 16 4H2Z" fill="currentColor"/></svg></button><span></span>
+              </div>
+              <div class="cen">
+                <button id="cenX" aria-label="左右の中央に寄せる" title="左右の中央"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 2V16M1.5 9H7M5 6.5 7.5 9 5 11.5M16.5 9H11M13 6.5 10.5 9 13 11.5"/></svg></button>
+                <button id="cenY" aria-label="上下の中央に寄せる" title="上下の中央"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 9H16M9 1.5V7M6.5 5 9 7.5 11.5 5M9 16.5V11M6.5 13 9 10.5 11.5 13"/></svg></button>
+                <button id="cenXY" aria-label="画像のまんなかに置く" title="まんなか"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M15 3 10.5 7.5M10.5 4V7.5H14M3 15 7.5 10.5M7.5 14V10.5H4"/></svg></button>
+              </div>
+            </div>
+            <div class="pos" id="posGrid"></div>
+            <div style="display:grid;gap:6px;flex:1;min-width:150px">
+              <button class="btn" id="suggest">おすすめ位置</button>
+              <p class="note">絵の中で、描き込みが少ない場所を探して置きます。最後は指で微調整してください。</p>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <h3>全部の画像に使う</h3>
+          <div class="slider"><label for="sJit">ゆらぎ</label><input type="range" id="sJit" min="0" max="6" step="0.5"><output id="oJit"></output></div>
+          <label class="check"><input type="checkbox" id="perAuto" checked>画像ごとに色を自動で選ぶ（グラデーション以外）</label>
+          <button class="btn primary" id="copyAll">この画像の署名を全部の画像にコピー</button>
+          <p class="note">重ねた署名は組み合わせを崩さずにコピーします。ゆらぎを入れると、画像ごとに位置と大きさが少しずつ変わり、まとめて消されにくくなります。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane" id="p-tpl" role="tabpanel" aria-labelledby="t-tpl" hidden>
+      <div class="sec">
+        <h3>今の署名をテンプレにする</h3>
+        <div class="row"><input type="text" id="tplName" maxlength="40" placeholder="例：ホロ白背景・右下" style="flex:1"><button class="btn primary" id="tplSave">保存</button></div>
+        <p class="note">この画像に置いている署名の種類・位置・大きさ・色を、重ねた分もまとめて保存します。</p>
+      </div>
+      <div class="sec">
+        <h3>保存したテンプレ</h3>
+        <div class="tpls" id="tplList"></div>
+        <p class="note">「全部に」は、調整タブの「ゆらぎ」と「色を自動で選ぶ」の設定で適用します。</p>
+      </div>
+    </div>
+
+    <div class="pane" id="p-exp" role="tabpanel" aria-labelledby="t-exp" hidden>
+      <div class="sec">
+        <h3>形式</h3>
+        <div class="row">
+          <div class="seg" id="fmtSeg"><button data-v="png">PNG</button><button data-v="jpg">JPG</button></div>
+          <div class="slider" id="qWrap" style="flex:1;min-width:200px"><label for="sQ">画質</label><input type="range" id="sQ" min="70" max="100" step="1"><output id="oQ"></output></div>
+        </div>
+        <p class="note">書き出す画像は、いつも背景を白で埋めた不透明な画像になります。プロンプトなどの文字情報も、NovelAIなどが透明度に隠している生成情報も、必ず消えます。</p>
+      </div>
+      <div class="sec">
+        <h3>大きさ</h3>
+        <select id="maxSide" aria-label="長辺の大きさ">
+          <option value="0">元のまま</option><option value="4096">長辺 4096px</option><option value="2048">長辺 2048px</option>
+          <option value="1600">長辺 1600px</option><option value="1200">長辺 1200px</option>
+        </select>
+      </div>
+      <div class="sec">
+        <h3>ファイル名</h3>
+        <div class="seg" id="nameSeg"><button data-v="date">日付</button><button data-v="seq">連番</button><button data-v="orig">元の名前</button><button data-v="rand">ランダム</button></div>
+        <div class="row" id="dateRow"><label for="expDate" class="note">日付</label><input type="date" id="expDate" style="flex:1;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;font-size:13px;min-width:0"><button class="btn sm" id="dateToday">今日</button></div>
+        <div class="row" id="prefixRow"><label for="prefix" class="note">頭につける文字</label><input type="text" id="prefix" maxlength="40" style="flex:1"></div>
+        <p class="note" id="namePreview"></p>
+      </div>
+      <div class="sec">
+        <p class="note">撮影日や位置、生成AIのプロンプトなどの情報は、書き出すときに必ず取り除かれます。元の画像は変更しません。</p>
+        <button class="btn primary wide" id="showAll">写真に保存する（書き出して表示）</button>
+        <p class="note">書き出した画像が下に並びます。画像を長押しして「写真に追加」（Androidは「画像をダウンロード」）を選ぶと、カメラロールに保存できます。</p>
+        <button class="btn wide" id="saveOne">この画像をファイルに保存</button>
+        <button class="btn wide" id="saveZip">全部まとめて保存（ZIP）</button>
+      </div>
+      <div class="sec" id="resSec" hidden>
+        <h3>書き出した画像</h3>
+        <p class="note" id="resNote">画像を長押しして「写真に追加」で、カメラロールに保存できます。</p>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="about" class="about">
+  <form method="dialog"><button class="btn sm" style="float:right" aria-label="閉じる">閉じる</button></form>
+  <h2>Signature Maker について</h2>
+  <p>作者：yoka（X：<a href="https://x.com/yokaAIart" target="_blank" rel="noopener">@yokaAIart</a>）</p>
+  <h3>画像の扱い</h3>
+  <ul><li>読み込んだ画像は、お使いの端末（ブラウザ）の中だけで処理されます。外部に送信・保存されることはありません。</li>
+  <li>書き出した画像には、生成AIのプロンプトなどの情報（メタデータ）は残りません。元の画像は変更されません。</li></ul>
+  <h3>ご自由にどうぞ</h3>
+  <ul><li>このツールで作ったデザインは、ご自身の作品の署名としてはもちろん、キャラ紹介やアイコンまわりの飾りなど、ほかの用途にもご自由にお使いいただけます。</li>
+  <li>個人の非商用での利用に限ります（販売する作品・グッズ、お仕事の制作物などには使えません）。</li>
+  <li>クレジット表記は不要です。使った作品を見せてもらえるとうれしいです。</li></ul>
+  <h3>ご遠慮ください</h3>
+  <ul><li>このツールで作ったデザインを、商用で利用すること。</li>
+  <li>このツール本体（ページのプログラム）、オリジナル文字、署名デザインのセットを、そのまま、または改変して、再配布・販売すること。</li>
+  <li>このツールや、オリジナル文字・署名デザインを、ご自身が作ったものとして公開すること。</li></ul>
+  <h3>権利と免責</h3>
+  <ul><li>このツールのプログラム、オリジナル文字、署名デザインの権利は、作者（yoka）に帰属します。</li>
+  <li>署名は、無断転載を完全に防ぐものではありません。</li>
+  <li>このツールの利用によって生じたトラブルや損害について、作者は責任を負いかねます。</li>
+  <li>内容は予告なく変更・終了することがあります。</li></ul>
+  <p class="note">© 2026 yoka</p>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* Signature generator: text + encoding + shape + theme -> monochrome SVG signature. */
+const SG = (() => {
+const f = (n) => Math.round(n * 100) / 100;
+function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hash(s){ let h = 2166136261; for (const ch of s){ h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+/* ---------- geometric letters, 60x80 box ---------- */
+const DIA = [[30, 0], [60, 40], [30, 80], [0, 40]];
+const G = {
+  A: [[[2, 80], [30, 0], [58, 80]]],
+  B: [[[8, 0], [8, 80]], [[8, 0], [44, 0], [54, 10], [54, 30], [44, 40], [8, 40]], [[8, 40], [48, 40], [58, 50], [58, 70], [48, 80], [8, 80]]],
+  C: [[[54, 12], [30, 0], [2, 40], [30, 80], [54, 68]]],
+  D: [[[8, 0], [8, 80], [30, 80], [58, 40], [30, 0], [8, 0]]],
+  E: [[[54, 0], [8, 0], [8, 80], [54, 80]], [[8, 40], [44, 40]]],
+  F: [[[54, 0], [8, 0], [8, 80]], [[8, 40], [44, 40]]],
+  G: [[[52, 12], [30, 0], [2, 40], [30, 80], [58, 46], [34, 46]]],
+  H: [[[6, 0], [6, 80]], [[54, 0], [54, 80]], [[6, 40], [54, 40]]],
+  I: [[[30, 0], [30, 80]]],
+  J: [[[50, 0], [50, 58], [30, 80], [8, 60]]],
+  K: [[[6, 0], [6, 80]], [[56, 2], [6, 44], [56, 78]]],
+  L: [[[8, 0], [8, 80], [54, 80]]],
+  M: [[[4, 80], [4, 0], [30, 46], [56, 0], [56, 80]]],
+  N: [[[6, 80], [6, 0], [54, 80], [54, 0]]],
+  O: [DIA.concat([DIA[0]])],
+  P: [[[8, 80], [8, 0], [44, 0], [56, 14], [56, 30], [44, 44], [8, 44]]],
+  Q: [DIA.concat([DIA[0]]), [[40, 64], [60, 84]]],
+  R: [[[8, 80], [8, 0], [44, 0], [56, 14], [56, 30], [44, 44], [8, 44]], [[30, 44], [56, 80]]],
+  S: [[[54, 4], [10, 4], [4, 20], [56, 60], [50, 76], [6, 76]]],
+  T: [[[2, 0], [58, 0]], [[30, 0], [30, 80]]],
+  U: [[[6, 0], [6, 58], [30, 80], [54, 58], [54, 0]]],
+  V: [[[2, 0], [30, 80], [58, 0]]],
+  W: [[[0, 0], [14, 80], [30, 30], [46, 80], [60, 0]]],
+  X: [[[4, 0], [56, 80]], [[56, 0], [4, 80]]],
+  Y: [[[0, 0], [30, 38], [60, 0]], [[30, 38], [30, 80]]],
+  Z: [[[4, 0], [56, 0], [4, 80], [56, 80]]],
+  0: [[[30, 0], [52, 40], [30, 80], [8, 40], [30, 0]], [[30, 24], [30, 56]]],
+  1: [[[16, 14], [32, 0], [32, 80]]],
+  2: [[[8, 14], [22, 0], [46, 0], [56, 14], [6, 80], [56, 80]]],
+  3: [[[6, 4], [54, 4], [26, 38], [54, 52], [46, 76], [6, 76]]],
+  4: [[[44, 80], [44, 0], [4, 56], [58, 56]]],
+  5: [[[54, 0], [10, 0], [6, 36], [48, 36], [56, 56], [46, 80], [4, 80]]],
+  6: [[[50, 0], [8, 44], [8, 64], [24, 80], [44, 80], [56, 64], [56, 50], [40, 36], [10, 44]]],
+  7: [[[4, 0], [56, 0], [22, 80]]],
+  8: [[[30, 0], [52, 20], [30, 40], [8, 20], [30, 0]], [[30, 40], [56, 60], [30, 80], [4, 60], [30, 40]]],
+  9: [[[52, 36], [22, 44], [6, 28], [6, 14], [20, 0], [42, 0], [56, 14], [56, 36], [14, 80]]],
+  a: [[[50, 34], [50, 80]], [[50, 57], [30, 34], [10, 57], [30, 80], [50, 57]]],
+  b: [[[10, 0], [10, 80]], [[10, 57], [30, 34], [50, 57], [30, 80], [10, 57]]],
+  c: [[[48, 42], [30, 34], [10, 57], [30, 80], [48, 72]]],
+  d: [[[50, 0], [50, 80]], [[50, 57], [30, 34], [10, 57], [30, 80], [50, 57]]],
+  e: [[[11, 57], [50, 57], [40, 41], [30, 34], [10, 57], [30, 80], [48, 72]]],
+  f: [[[46, 6], [36, 0], [26, 8], [26, 80]], [[10, 36], [44, 36]]],
+  g: [[[50, 34], [50, 92], [32, 100], [14, 94]], [[50, 57], [30, 34], [10, 57], [30, 80], [50, 57]]],
+  h: [[[10, 0], [10, 80]], [[10, 52], [30, 34], [50, 52], [50, 80]]],
+  i: [[[30, 34], [30, 80]], [[30, 13], [34, 18], [30, 23], [26, 18], [30, 13]]],
+  j: [[[38, 34], [38, 92], [26, 100], [12, 95]], [[38, 13], [42, 18], [38, 23], [34, 18], [38, 13]]],
+  k: [[[12, 0], [12, 80]], [[48, 36], [12, 62], [48, 80]]],
+  l: [[[26, 0], [26, 72], [36, 80]]],
+  m: [[[6, 80], [6, 34]], [[6, 48], [18, 34], [30, 48], [30, 80]], [[30, 48], [42, 34], [54, 48], [54, 80]]],
+  n: [[[10, 80], [10, 34]], [[10, 52], [30, 34], [50, 52], [50, 80]]],
+  o: [[[30, 34], [52, 57], [30, 80], [8, 57], [30, 34]]],
+  p: [[[10, 34], [10, 100]], [[10, 57], [30, 34], [50, 57], [30, 80], [10, 57]]],
+  q: [[[50, 34], [50, 100]], [[50, 57], [30, 34], [10, 57], [30, 80], [50, 57]]],
+  r: [[[12, 80], [12, 34]], [[12, 54], [30, 34], [46, 38]]],
+  s: [[[48, 38], [16, 36], [12, 48], [48, 66], [44, 78], [10, 78]]],
+  t: [[[28, 8], [28, 74], [38, 80]], [[12, 36], [46, 36]]],
+  u: [[[10, 34], [10, 62], [30, 80], [50, 62]], [[50, 34], [50, 80]]],
+  v: [[[8, 34], [30, 80], [52, 34]]],
+  w: [[[2, 34], [14, 80], [30, 48], [46, 80], [58, 34]]],
+  x: [[[10, 34], [50, 80]], [[50, 34], [10, 80]]],
+  y: [[[8, 34], [30, 76]], [[52, 34], [24, 100]]],
+  z: [[[10, 34], [50, 34], [10, 80], [50, 80]]],
+  "@": [[[44, 56], [44, 30], [30, 22], [17, 32], [18, 50], [32, 58], [44, 48], [52, 56], [58, 42], [56, 22], [44, 6], [26, 2], [10, 12], [2, 34], [6, 60], [22, 76], [42, 80], [54, 74]]],
+  "_": [[[2, 80], [58, 80]]],
+  ".": [[[30, 69], [35, 74], [30, 79], [25, 74], [30, 69]]],
+  "-": [[[12, 44], [48, 44]]],
+  "/": [[[54, 0], [6, 80]]],
+  "#": [[[22, 4], [14, 76]], [[46, 4], [38, 76]], [[6, 28], [58, 28]], [[2, 54], [54, 54]]],
+  "+": [[[30, 18], [30, 62]], [[8, 40], [52, 40]]],
+  "!": [[[30, 0], [30, 54]], [[30, 69], [35, 74], [30, 79], [25, 74], [30, 69]]],
+  "?": [[[8, 16], [20, 2], [42, 2], [54, 16], [54, 28], [30, 44], [30, 56]], [[30, 69], [35, 74], [30, 79], [25, 74], [30, 69]]],
+  ":": [[[30, 21], [35, 26], [30, 31], [25, 26], [30, 21]], [[30, 59], [35, 64], [30, 69], [25, 64], [30, 59]]],
+  "&": [[[56, 80], [14, 26], [20, 6], [36, 4], [42, 18], [8, 54], [12, 74], [30, 80], [54, 52]]],
+  "♡": [[[30, 76], [6, 46], [2, 26], [10, 10], [22, 6], [30, 18], [38, 6], [50, 10], [58, 26], [54, 46], [30, 76]]],
+  "★": [[[30.0, 2.0], [40.0, 28.2], [68.0, 29.6], [46.2, 47.3], [53.5, 74.4], [30.0, 59.0], [6.5, 74.4], [13.8, 47.3], [-8.0, 29.6], [20.0, 28.2], [30.0, 2.0]]],
+};
+const MORSE = { A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.", G: "--.", H: "....", I: "..", J: ".---", K: "-.-", L: ".-..", M: "--", N: "-.", O: "---", P: ".--.", Q: "--.-", R: ".-.", S: "...", T: "-", U: "..-", V: "...-", W: ".--", X: "-..-", Y: "-.--", Z: "--..",
+  "@": ".--.-.", "_": "..--.-", ".": ".-.-.-", "-": "-....-", "/": "-..-.", "+": ".-.-.", "!": "-.-.--", "?": "..--..", ":": "---...", "&": ".-...",
+  0: "-----", 1: ".----", 2: "..---", 3: "...--", 4: "....-", 5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----." };
+/* fragments of letters for unreadable runes: unit box, base at 0, up = -1 */
+const FR = {
+  fork: [[[-.5, -1], [0, -.45], [.5, -1]], [[0, -.45], [0, 0]]],
+  peak: [[[-.45, 0], [0, -1], [.45, 0]]],
+  karm: [[[0, -1], [0, 0]], [[.55, -.92], [0, -.45], [.55, -.04]]],
+  odia: [[[0, -1], [.55, -.5], [0, 0], [-.55, -.5], [0, -1]]],
+  tick: [[[0, -1], [0, 0]]],
+  chev: [[[-.4, -1], [.4, -.5], [-.4, 0]]],
+  bar: [[[-.5, -.5], [.5, -.5]]]
+};
+const FRK = Object.keys(FR);
+
+/* ---------- emitter with bbox ---------- */
+function Em(){
+  const e = [], bb = [Infinity, Infinity, -Infinity, -Infinity];
+  const grow = (x, y, pad) => { bb[0] = Math.min(bb[0], x - pad); bb[1] = Math.min(bb[1], y - pad); bb[2] = Math.max(bb[2], x + pad); bb[3] = Math.max(bb[3], y + pad); };
+  const d = (pts, z) => "M" + pts.map(p => f(p[0]) + " " + f(p[1])).join("L") + (z ? "Z" : "");
+  return {
+    poly(pts, w, opt){ if (pts.length < 2) return; opt = opt || {}; pts.forEach(p => grow(p[0], p[1], w / 2));
+      e.push(`<path d="${d(pts, opt.z)}" fill="none" stroke="#000" stroke-width="${f(w)}" stroke-linecap="${opt.cap || "round"}" stroke-linejoin="${opt.join || "round"}"${opt.dash ? ` stroke-dasharray="${opt.dash}"` : ""}/>`); },
+    fill(pts){ pts.forEach(p => grow(p[0], p[1], 0)); e.push(`<path d="${d(pts, true)}" fill="#000"/>`); },
+    star(x, y, R){ const q = R * .15; grow(x, y, R);
+      e.push(`<path d="M${f(x)} ${f(y - R)}Q${f(x + q)} ${f(y - q)} ${f(x + R)} ${f(y)}Q${f(x + q)} ${f(y + q)} ${f(x)} ${f(y + R)}Q${f(x - q)} ${f(y + q)} ${f(x - R)} ${f(y)}Q${f(x - q)} ${f(y - q)} ${f(x)} ${f(y - R)}Z" fill="#000"/>`); },
+    circle(x, y, r, w, dash){ grow(x, y, r + w / 2); e.push(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="none" stroke="#000" stroke-width="${f(w)}"${dash ? ` stroke-dasharray="${dash}" stroke-linecap="round"` : ""}/>`); },
+    svg(pad){ pad = pad || 12; const x = bb[0] - pad, y = bb[1] - pad, W = bb[2] - bb[0] + pad * 2, H = bb[3] - bb[1] + pad * 2;
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f(x)} ${f(y)} ${f(W)} ${f(H)}" width="${f(W)}" height="${f(H)}">${e.join("")}</svg>`; },
+    size(){ return [bb[2] - bb[0], bb[3] - bb[1]]; }
+  };
+}
+
+/* ---------- tracks: polylines with arclength ---------- */
+function Track(pts){
+  const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const L = cum[cum.length - 1];
+  const seg = (s) => { s = Math.max(0, Math.min(L, s)); let lo = 0, hi = cum.length - 1; while (hi - lo > 1){ const m = (lo + hi) >> 1; if (cum[m] <= s) lo = m; else hi = m; } return [lo, s]; };
+  const t = {
+    L, pts,
+    at(s){ const [i, ss] = seg(s), a = pts[i], b = pts[i + 1] || a, l = (cum[i + 1] - cum[i]) || 1, k = (ss - cum[i]) / l;
+      const ang = Math.atan2(b[1] - a[1], b[0] - a[0]); return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, ang]; },
+    slice(s1, s2){ if (s2 <= s1) return []; const out = [t.at(s1)]; for (let i = 1; i < pts.length - 1; i++) if (cum[i] > s1 && cum[i] < s2) out.push(pts[i]); out.push(t.at(s2)); return out.map(p => [p[0], p[1]]); },
+    /* local -> world at s: u along, v toward "up" (left normal) */
+    tp(s, up){ const [x, y, a] = t.at(s), c = Math.cos(a), sn = Math.sin(a); const ang = up ? 0 : a, cu = Math.cos(ang), su = Math.sin(ang);
+      return (u, v) => [x + u * cu + v * su, y + u * su - v * cu]; }
+  };
+  return t;
+}
+const line = (x1, y1, x2, y2) => Track([[x1, y1], [x2, y2]]);
+function curve(fn, n){ const p = []; for (let i = 0; i <= n; i++) p.push(fn(i / n)); return Track(p); }
+
+/* ---------- themes ---------- */
+const THEMES = {
+  minimal: { n: "ミニマル", weight: 1, size: 1, spacing: 1, thin: 2.4, ends: "small", extras: [] },
+  elegant: { n: "エレガント", weight: .75, size: .95, spacing: 2.3, thin: 1.4, ends: "odia", extras: ["between"] },
+  pop: { n: "ポップ", weight: 2.6, size: 1.9, spacing: 1, thin: 6, ends: "big", extras: ["bars"] },
+  gothic: { n: "ゴシック", weight: 1.3, size: 1.1, spacing: 1.2, thin: 2.6, ends: "lozenge", extras: ["thorns"] },
+  sparkle: { n: "キラキラ", weight: 1.05, size: 1, spacing: 1.35, thin: 2, ends: "star", extras: ["stars"] },
+  art: { n: "アート", weight: 1, size: 1, spacing: 1.1, thin: 2, ends: "odia", extras: ["ticks"] }
+};
+const ENCS = { glyph: "文字（読める）", morse: "モールス", rune: "ルーン（読めない）", beat: "リズム（読めない）", beads: "ビーズ（読めない）" };
+const SHAPES = { line: "横ライン", vert: "縦ライン", wave: "波", zigzag: "ジグザグ", converge: "3本の線", twotier: "2段", ucurve: "U字",
+  corner_tl: "角・左上", corner_tr: "角・右上", corner_bl: "角・左下", corner_br: "角・右下", circle: "円", radial: "放射" };
+
+/* ---------- encodings: groups (one per character) of items ---------- */
+function encode(enc, text, T, r){
+  const chars = [...text.replace(/\s+/g, " ").trim()];
+  const W = T.weight, Z = T.size, SP = T.spacing, groups = [];
+  for (const ch of chars){
+    if (ch === " "){ const g = [{ k: "gap", len: 30 * Z * SP }]; g.space = true; groups.push(g); continue; }
+    const U = ch.toUpperCase(), code = U.codePointAt(0), items = [];
+    if (enc === "morse"){
+      const m = MORSE[U] || (code.toString(2).slice(-4).replace(/1/g, "-").replace(/0/g, "."));
+      for (const k of m){ if (k === "-") items.push({ k: "dash", len: 58 * Z, w: 9 * W }); else items.push({ k: "dot", len: 24 * Z * Math.max(1, Math.sqrt(W) * .9), w: 9 * W }); items.push({ k: "gap", len: 22 * Z }); }
+      items.pop();
+    } else if (enc === "glyph"){
+      const g = G[ch] || G[U]; if (!g) continue; items.push({ k: "glyph", g, len: 60 * 44 / 80 * Z * (T.pop ? 1 : 1), h: 44 * Z, w: 3.3 * W });
+    } else if (enc === "rune"){
+      const h = hash(U + text.length), n = 1 + (h % 2);
+      for (let i = 0; i < n; i++){ const key = FRK[(h >>> (i * 3 + 2)) % FRK.length], sz = (22 + ((h >>> (i * 5 + 7)) % 22)) * Z, side = ((h >>> (i + 11)) & 1) ? 1 : -1;
+        items.push({ k: "frag", fr: FR[key], len: sz * .8, h: sz, side, w: 2.6 * W }); items.push({ k: "gap", len: 16 * Z }); }
+      if (((h >>> 20) & 3) === 0) items.push({ k: "dot", len: 14 * Z, w: 6 * W });
+      else items.pop();
+    } else if (enc === "beat"){
+      for (let b = 0; b < 6; b++){ const on = (code >> b) & 1, ht = (on ? 20 + (b % 3) * 12 : 8) * Z; items.push({ k: "tick", len: 7 * Z, h: ht, side: b % 2 ? -1 : 1, w: 2.6 * W }); }
+    } else if (enc === "beads"){
+      const h = hash(U);
+      for (let i = 0; i < 2; i++){ const ry = (9 + ((h >>> (i * 4)) % 18)) * Z, fill = ((h >>> (i + 9)) & 3) === 0; items.push({ k: "bead", len: ry * 1.25, ry, fill, w: 2.4 * W }); items.push({ k: "gap", len: 10 * Z }); }
+      items.pop();
+    }
+    if (items.length) groups.push(items);
+  }
+  const lgap = { morse: 56, glyph: 26, rune: 30, beat: 22, beads: 26 }[enc] * Z * SP;
+  const flat = []; groups.forEach((g, i) => { if (i) flat.push({ k: "lgap", len: lgap }); flat.push(...g); });
+  const len = flat.reduce((a, it) => a + it.len, 0);
+  const maxH = flat.reduce((a, it) => Math.max(a, it.h ? it.h + (it.k === "glyph" ? 12 : 0) : it.ry || it.len / 2), 0);
+  return { maxH, groups, flat, len, lgap, through: enc === "rune" || enc === "beat" || enc === "beads" };
+}
+
+/* draw one item at arclength s on track */
+function drawItem(em, tr, it, s, opt){
+  const mid = s + it.len / 2;
+  if (it.k === "dash"){ em.poly(tr.slice(s + it.w / 2, s + it.len - it.w / 2), it.w); return; }
+  if (it.k === "dot"){ const P = tr.tp(mid), rx = it.len / 2, ry = it.len / 2 * 1.05; em.fill([P(0, ry), P(rx, 0), P(0, -ry), P(-rx, 0)]); return; }
+  if (it.k === "glyph"){
+    const sc = it.h / 80, P = tr.tp(mid, opt.upright), base = opt.above ? 10 + it.h : it.h / 2;
+    for (const pl of it.g) em.poly(pl.map(([gx, gy]) => P((gx - 30) * sc, base - gy * sc)), it.w, { join: opt.sharp ? "miter" : "round", cap: opt.sharp ? "butt" : "round" });
+    return; }
+  if (it.k === "frag"){ const P = tr.tp(mid); for (const pl of it.fr) em.poly(pl.map(([u, v]) => P(u * it.h, -v * it.h * it.side)), it.w); return; }
+  if (it.k === "tick"){ const P = tr.tp(mid); em.poly([P(0, 0), P(0, it.h * it.side)], it.w); return; }
+  if (it.k === "bead"){ const P = tr.tp(mid), rx = it.ry * .55; const pts = [P(0, it.ry), P(rx, 0), P(0, -it.ry), P(-rx, 0)]; if (it.fill) em.fill(pts); else em.poly(pts.concat([pts[0]]), it.w, { join: "round" }); return; }
+}
+function placeSeq(em, tr, flat, s0, opt){ let s = s0; for (const it of flat){ drawItem(em, tr, it, s, opt); s += it.len; } return s; }
+
+/* ornaments at track position */
+function orn(em, tr, s, kind, T, sgn){
+  const P = tr.tp(s), z = T.size, w = T.thin;
+  if (kind === "small"){ const r = 6 * z * Math.sqrt(T.weight); em.fill([P(0, r), P(r, 0), P(0, -r), P(-r, 0)]); }
+  else if (kind === "odia"){ const rx = 22 * z, ry = 12 * z; em.poly([P(-rx, 0), P(0, ry), P(rx, 0), P(0, -ry), P(-rx, 0)], w * 1.4, { join: "round" }); em.poly([P(-rx * .45, 0), P(0, ry * .45), P(rx * .45, 0), P(0, -ry * .45), P(-rx * .45, 0)], w, { join: "round" }); }
+  else if (kind === "big"){ const r = 16 * z; em.fill([P(0, r), P(r, 0), P(0, -r), P(-r, 0)]); }
+  else if (kind === "lozenge"){ const r = 9 * z; em.fill([P(0, r * 1.5), P(r, 0), P(0, -r * 1.5), P(-r, 0)]); const q = tr.tp(s + sgn * 30 * z); em.fill([q(0, 5 * z), q(5 * z, 0), q(0, -5 * z), q(-5 * z, 0)]); }
+  else if (kind === "star"){ const p = P(0, 0); em.star(p[0], p[1], 20 * z); }
+}
+function leadLine(em, tr, s1, s2, T, r, kind){
+  if (s2 - s1 < 4) return;
+  em.poly(tr.slice(s1, s2), T.thin);
+  if (T.extras.includes("thorns")){ const st = 46 * T.size; let i = 0; for (let s = s1 + st / 2; s < s2 - st / 3; s += st, i++){ const P = tr.tp(s), sd = i % 2 ? 1 : -1; em.poly([P(0, 0), P(10 * T.size, 12 * T.size * sd), P(3 * T.size, 2 * T.size * sd)], T.thin, { join: "round" }); } }
+  if (T.extras.includes("ticks") && kind !== "tail"){ const st = 14 * T.size; let i = 0; for (let s = s2 - st; s > s1 + st && i < 40; s -= st, i++){ const P = tr.tp(s); em.poly([P(0, 0), P(0, (i % 5 === 0 ? 16 : 8) * T.size)], T.thin * .9); } }
+  if (T.extras.includes("bars") && kind === "tail"){ let s = s1 + 30 * T.size; for (const L of [80, 40, 0, 120]){ if (s + L * T.size > s2) break; if (!L){ const P = tr.tp(s + 12 * T.size), q = 12 * T.size; em.fill([P(0, q), P(q, 0), P(0, -q), P(-q, 0)]); s += 40 * T.size; continue; } em.poly(tr.slice(s, s + L * T.size), 14 * T.weight / 2.6 * 2.6); s += (L + 22) * T.size; } }
+}
+function sparkles(em, tr, s1, s2, T, r, clear){
+  clear = clear || 30 * T.size;
+  const n = 4 + Math.floor(r() * 3);
+  for (let i = 0; i < n; i++){ const s = s1 + (s2 - s1) * (i + r() * .6) / n, P = tr.tp(s), side = r() < .5 ? -1 : 1, R = (i === 0 ? 34 : 9 + r() * 20) * T.size, p = P(0, side * (clear + R * .8 + r() * 30 * T.size));
+    em.star(p[0], p[1], R); }
+  for (let i = 0; i < 4; i++){ const P = tr.tp(s1 + (s2 - s1) * r()), p = P(0, (r() < .5 ? -1 : 1) * (clear + r() * 50 * T.size)), q = 4 * T.size; em.fill([[p[0], p[1] - q], [p[0] + q, p[1]], [p[0], p[1] + q], [p[0] - q, p[1]]]); }
+}
+
+/* standard composition on a single track */
+function compose(em, tr, E, T, r, o){
+  o = o || {}; const gap = 26 * T.size, len = E.len;
+  let s0 = o.s0 != null ? o.s0 : (tr.L - len) * (o.pos != null ? o.pos : .5);
+  s0 = Math.max(gap + 20, Math.min(tr.L - len - gap - 20, s0));
+  const s1 = s0 + len;
+  const opt = { above: o.above, upright: o.upright, sharp: T.weight > 2 };
+  if (E.through || o.above){ leadLine(em, tr, 0, s0 - (o.above ? 0 : 0), T, r, "lead"); em.poly(tr.slice(s0, s1), T.thin); leadLine(em, tr, s1, tr.L, T, r, "tail"); }
+  else { leadLine(em, tr, 0, s0 - gap, T, r, "lead"); leadLine(em, tr, s1 + gap, tr.L, T, r, "tail"); }
+  placeSeq(em, tr, E.flat, s0, opt);
+  if (T.extras.includes("between") && E.groups.length > 1){ let s = s0; E.flat.forEach(it => { if (it.k === "lgap"){ const P = tr.tp(s + it.len / 2), q = 4.5 * T.size; em.fill([P(0, q), P(q, 0), P(0, -q), P(-q, 0)]); } s += it.len; }); }
+  if (!o.noEnds){
+    const e = T.ends;
+    if (e === "small" || e === "lozenge"){ orn(em, tr, s0 - gap * (E.through || o.above ? 1.6 : .5) - 4, e, T, -1); orn(em, tr, s1 + gap * (E.through || o.above ? 1.6 : .5) + 4, e, T, 1); }
+    else if (e === "odia" || e === "star"){ orn(em, tr, s1 + gap + 30 * T.size, e, T, 1); }
+    else if (e === "big"){ orn(em, tr, tr.L - 18 * T.size, e, T, 1); }
+  }
+  if (T.extras.includes("stars")) sparkles(em, tr, s0, s1, T, r, (o.above ? E.maxH + 14 : E.maxH * .6 + 14));
+  return [s0, s1];
+}
+
+/* ---------- shapes ---------- */
+const BUILD = {
+  line(em, E, T, r){ const L = Math.max(1100 + r() * 700, E.len + 700); const tr = line(0, 0, L, 0); compose(em, tr, E, T, r, { pos: .3 + r() * .4, above: E.glyph && r() < .5 }); return { place: "line" }; },
+  vert(em, E, T, r){ const L = Math.max(1100 + r() * 600, E.len + 700); const tr = line(0, 0, 0, L); compose(em, tr, E, T, r, { pos: .2 + r() * .3, upright: E.glyph }); return { place: "vert" }; },
+  wave(em, E, T, r){ const L = Math.max(1500, E.len + 900), A = (40 + r() * 30) * Math.max(1, T.size * .8), lam = 520 + r() * 260, ph = r() * 6;
+    const tr = curve(t => [t * L, A * Math.sin(2 * Math.PI * t * L / lam + ph)], 240); compose(em, tr, E, T, r, { pos: .35 + r() * .3 }); return { place: "line" }; },
+  zigzag(em, E, T, r){ const L = Math.max(1400, E.len + 800), rise = -(160 + r() * 120); const tr = Track([[0, 30], [150, -10], [70, 120], [70 + L, 120 + rise]]);
+    compose(em, tr, E, T, r, { s0: 330 + (tr.L - 330 - E.len) * (.25 + r() * .3) }); { const q = 9 * T.size; em.fill([[70, 120 - q], [70 + q, 120], [70, 120 + q], [70 - q, 120]]); } return { place: "line" }; },
+  converge(em, E, T, r){ const L = Math.max(1400, E.len + 700), tipX = L * .92, spread = 80 + r() * 50;
+    const mid = line(0, 0, L, 0); compose(em, mid, E, T, r, { s0: tipX - E.len - 60, noEnds: true });
+    for (const sd of [-1, 1]){ const tr = curve(t => [L * .12 + t * (tipX - L * .12), sd * spread * Math.pow(1 - t, 1.6)], 80); em.poly(tr.slice(0, tr.L), T.thin); }
+    orn(em, mid, tipX + 40, T.ends === "small" ? "odia" : T.ends === "big" ? "big" : T.ends, T, 1); return { place: "line" }; },
+  twotier(em, E, T, r){ const half = Math.ceil(E.groups.length / 2); const A = sub(E, 0, half), B = sub(E, half, E.groups.length);
+    const L = Math.max(1400, Math.max(A.len, B.len) + 900), gy = 46 * T.size + 30;
+    compose(em, line(0, 0, L, 0), A, T, r, { pos: .3 + r() * .1 }); if (B.flat.length) compose(em, line(0, gy, L, gy), B, T, r, { pos: .55 + r() * .15, noEnds: true }); return { place: "line" }; },
+  ucurve(em, E, T, r){ const H = Math.max(1200, E.len + 500), R = 150 + r() * 60;
+    const pts = [[0, 0], [0, H - R]]; for (let i = 1; i <= 40; i++){ const a = Math.PI - Math.PI * i / 40; pts.push([R + R * Math.cos(a), H - R + R * Math.sin(a)]); } pts.push([2 * R, H * .35]);
+    const tr = Track(pts); compose(em, tr, E, T, r, { s0: H * .35 + r() * 80 }); return { place: "vert" }; },
+  circle(em, E, T, r){ const R = Math.max(240, (E.len + 200) / (Math.PI * 1.1));
+    const tr = curve(t => { const a = Math.PI * .5 + t * Math.PI * 2; return [R * Math.cos(a), R * Math.sin(a)]; }, 360);
+    compose(em, tr, E, T, r, { s0: tr.L / 2 - E.len / 2, noEnds: true });
+    em.circle(0, 0, R - 34 * T.size, T.thin); if (T.n !== "ミニマル") em.circle(0, 0, R + 36 * T.size, T.thin * 1.4, `0.1 ${f(18 * T.size)}`);
+    const q = 22 * T.size; if (T.ends === "star") em.star(0, 0, q * 1.6); else { em.poly([[0, -q * 1.4], [q, 0], [0, q * 1.4], [-q, 0], [0, -q * 1.4]], T.thin * 1.5, { join: "round" }); em.fill([[0, -q * .5], [q * .35, 0], [0, q * .5], [-q * .35, 0]]); }
+    return { place: "round" }; },
+  radial(em, E0, T, r){ const E = Object.assign({}, E0, { groups: E0.groups.filter(g => !g.space) }), n = E.groups.length, r0 = 70 * T.size, a0 = -Math.PI / 2 + (r() - .5) * .6;
+    E.groups.forEach((g, i) => { const a = a0 + i * Math.PI * 2 / n, len = g.reduce((s, it) => s + it.len, 0), tr = line(r0 * Math.cos(a), r0 * Math.sin(a), (r0 + len + 160) * Math.cos(a), (r0 + len + 160) * Math.sin(a));
+      placeSeq(em, tr, g, 0, { upright: false }); if (E.through) em.poly(tr.slice(0, len), T.thin); em.poly(tr.slice(len + 24, tr.L), T.thin); });
+    const q = 16 * T.size; em.fill([[0, -q * 1.4], [q, 0], [0, q * 1.4], [-q, 0]]); em.circle(0, 0, r0 * .62, T.thin);
+    if (T.extras.includes("stars")) for (let i = 0; i < 5; i++){ const a = r() * 6.28, d = r0 * (2 + r() * 3); em.star(d * Math.cos(a), d * Math.sin(a), (8 + r() * 16) * T.size); }
+    return { place: "round" }; }
+};
+function corner(an){ return (em, E, T, r) => {
+  const onCorner = !E.glyph && r() < .45, L = onCorner ? Math.max(520, E.len / 2 + 300) : 560, Lh = onCorner ? L : Math.max(620, E.len + 360), sx = an[1] === "l" ? 1 : -1, sy = an[0] === "t" ? 1 : -1;
+  /* path goes along the vertical arm toward the corner, then along the horizontal arm so text on the top/bottom edge reads left-to-right */
+  const pts = sx === 1 ? (sy === 1 ? [[0, L], [0, 0], [Lh, 0]] : [[0, -L], [0, 0], [Lh, 0]]) : (sy === 1 ? [[-Lh, 0], [0, 0], [0, L]] : [[-Lh, 0], [0, 0], [0, -L]]);
+  const tr = Track(pts), hFirst = sx === -1; compose(em, tr, E, T, r, { s0: onCorner ? (hFirst ? Lh : L) - E.len / 2 : hFirst ? Lh - 150 - E.len : L + 150, noEnds: true, above: false });
+  const d1 = 70, d2 = L * .62; em.poly([[sx * d1, sy * d1], [sx * d2, sy * d2]], T.thin);
+  const k = 3 + Math.floor(r() * 3); for (let i = 0; i < k; i++){ const a = Math.atan2(sy, sx) + (i - (k - 1) / 2) * .22, a1 = 40 + r() * 20, a2 = a1 + 30 + r() * 60; em.poly([[Math.cos(a) * a1, Math.sin(a) * a1], [Math.cos(a) * a2, Math.sin(a) * a2]], T.thin * 1.5); }
+  const q = 13 * T.size; em.poly([[-sx * 18, -sy * 18 - q * 1.5], [-sx * 18 + q, -sy * 18], [-sx * 18, -sy * 18 + q * 1.5], [-sx * 18 - q, -sy * 18], [-sx * 18, -sy * 18 - q * 1.5]], T.thin * 1.3, { join: "round" });
+  if (T.extras.includes("stars")) sparkles(em, Track([[sx * 60, sy * 60], [sx * L * .7, sy * L * .7]]), 0, L * .9, T, r);
+  return { place: "corner", anchor: an };
+}; }
+for (const an of ["tl", "tr", "bl", "br"]) BUILD["corner_" + an] = corner(an);
+function sub(E, a, b){ const groups = E.groups.slice(a, b), flat = []; groups.forEach((g, i) => { if (i) flat.push({ k: "lgap", len: E.lgap }); flat.push(...g); }); return Object.assign({}, E, { groups, flat, len: flat.reduce((s, it) => s + it.len, 0) }); }
+
+function make(o){
+  let text0 = norm(o.text || "SIGN").slice(0, 20); if (o.cs === "upper") text0 = text0.toUpperCase(); else if (o.cs === "lower") text0 = text0.toLowerCase();
+  const text = text0, r = rng(o.seed || 1), T = THEMES[o.theme] || THEMES.minimal;
+  let enc = o.enc;
+  if ((enc === "glyph" || enc === "morse") && ![...text.toUpperCase()].some(c => G[c])) enc = "rune";
+  const E = encode(enc, text, T, r); E.glyph = enc === "glyph";
+  if (!E.flat.length) return null;
+  const em = Em(); const info = BUILD[o.shape] ? BUILD[o.shape](em, E, T, r) : BUILD.line(em, E, T, r);
+  return Object.assign({ svg: em.svg(10 + T.thin * 2), enc }, info);
+}
+function norm(s){ return String(s).normalize("NFKC").replace(/[\u2661\u2665\u2764]\uFE0F?/g, "♡").replace(/[\u2606\u2B50]/g, "★"); }
+function pickOpt(r, obj, v){ if (v && v !== "auto") return v; const k = Object.keys(obj); return k[Math.floor(r() * k.length)]; }
+function batch(o, n){
+  const out = [], r = rng(o.seed || 7);
+  for (let i = 0; i < n * 3 && out.length < n; i++){
+    const spec = { text: o.text, cs: o.cs, enc: pickOpt(r, ENCS, o.enc), shape: pickOpt(r, SHAPES, o.shape), theme: pickOpt(r, THEMES, o.theme), seed: (r() * 4294967295) >>> 0 };
+    let res = null; try{ res = make(spec); }catch(e){ console.error(e); }
+    if (res) out.push(Object.assign(spec, res));
+  }
+  return out;
+}
+return { make, batch, THEMES, ENCS, SHAPES, glyphsOK: (t) => [...norm(t)].filter(c => c.trim()).every(c => G[c] || G[c.toUpperCase()]), norm };
+})();
+
+/* Shared palette presets + palette gacha UI . */
+const PAL = (() => {
+const GROUPS = [
+  ["定番", [
+    ["クール", ["#1b2a4a", "#3a4f8a", "#7f5bc4", "#38c9e8"]],
+    ["ゴシック", ["#1e1d24", "#3b2335", "#7a2a46", "#c9a24b"]],
+    ["パステル", ["#f4b8d8", "#b8e3d6", "#c5b8f0", "#fff1b8"]],
+    ["レトロポップ", ["#f3e2b5", "#f68b3a", "#2a8a8a", "#d9434f"]],
+    ["ネオンナイト", ["#141a3a", "#ff3fbf", "#3fd0ff", "#c8ff3f"]],
+    ["アンティーク", ["#e2cfb2", "#8a6a4a", "#6b4a35", "#b89a5a"]],
+    ["ボタニカル", ["#24624a", "#a9c98a", "#f3efd8", "#6b8f4a"]],
+    ["ベリーミックス", ["#5a2d6b", "#c9375a", "#f4b8c8", "#8a3a8a"]],
+    ["モノクロ", ["#111114", "#55575f", "#a9abb3", "#f2f2f4"]],
+    ["和モダン", ["#b33a3a", "#1f2a44", "#c9a24b", "#efe6d6"]]]],
+  ["おすすめ", [
+    ["ホロ", ["#ff9ad5", "#a3b8ff", "#8ff0d9", "#fff1a8"]],
+    ["シルバー", ["#6f7686", "#b8bdcb", "#e6e9f0", "#ffffff"]],
+    ["ゆめかわ", ["#ffb3d9", "#c9b3ff", "#b3e5ff", "#fff0f8"]],
+    ["白昼夢", ["#e8d9f2", "#d5e8f0", "#f2e3d5", "#c7c9d9"]],
+    ["地雷", ["#1b1b22", "#ff5fa2", "#ffd1e1", "#ffffff"]],
+    ["深海", ["#0b1e3a", "#1f4e79", "#3fa7c9", "#bfe9f2"]],
+    ["ゴールド", ["#8a6a24", "#c9a24b", "#f2d58a", "#fff6dc"]],
+    ["ガラス", ["#9fd8e8", "#c9e8f2", "#e9f6fa", "#a8b8e8"]],
+    ["夜の薔薇", ["#2a0f1e", "#6b1532", "#c23b5f", "#e8c9a8"]],
+    ["ミント", ["#2a8a7a", "#7fd1c7", "#d9f2ee", "#f6fbfa"]]]],
+  ["季節", [
+    ["春", ["#f9c9d4", "#fde9a8", "#c8e6b8", "#b8d8f0"]],
+    ["夏", ["#2fb3e0", "#ffd34d", "#28c7a0", "#ffffff"]],
+    ["秋", ["#c4552e", "#e09b3d", "#7a4a2a", "#f2dcb3"]],
+    ["冬", ["#3d5a80", "#9fb4d0", "#e8eef6", "#ffffff"]],
+    ["桜", ["#ffd1e1", "#ff8fb3", "#c95a7a", "#fff0f5"]],
+    ["七夕", ["#1b2a6b", "#5d6ad9", "#f2d07a", "#c7b8ff"]],
+    ["ハロウィン", ["#1b1b22", "#f28c28", "#7a3fa0", "#f2e6c8"]],
+    ["クリスマス", ["#b3262e", "#1f6b4a", "#f2d07a", "#ffffff"]],
+    ["バレンタイン", ["#5a3a2a", "#7a2a3a", "#e85a8a", "#f6c9d6"]],
+    ["お正月", ["#c8102e", "#f2d07a", "#1b1b22", "#fff8ee"]]]]
+];
+const CATS = [["all", "すべて"], ["cool", "寒色"], ["warm", "暖色"], ["neutral", "中性色"], ["mono", "無彩色"]];
+const MOODS = [["all", "すべて"], ["pastel", "パステル"], ["neon", "ネオン"], ["dull", "くすみ"], ["deep", "深色"], ["vivid", "鮮やか"], ["natural", "ナチュラル"], ["retro", "レトロ"]];
+const HARMS = [["auto", "おまかせ"], ["analog", "類似色"], ["comp", "補色"], ["triad", "トライアド"], ["split", "分裂補色"], ["mono", "モノトーン"]];
+const MR = { pastel: [[45, 75], [78, 90]], neon: [[88, 100], [50, 62]], dull: [[12, 30], [45, 76]], deep: [[35, 65], [16, 36]], vivid: [[70, 92], [44, 58]], natural: [[18, 45], [32, 80]], retro: [[40, 68], [42, 74]] };
+const HO = { analog: [0, 24, -24, 46], comp: [0, 180, 16, 196], triad: [0, 120, 240, 0], split: [0, 150, 210, 20], mono: [0, 0, 0, 0] };
+function hex(h, s, l){ h = ((h % 360) + 360) % 360; s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return "#" + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join(""); }
+const rr = (a, b) => a + Math.random() * (b - a), pick = (a) => a[Math.floor(Math.random() * a.length)];
+function gen(o){
+  const cat = o.cat === "all" ? pick(["cool", "warm", "neutral", "mono"]) : o.cat, mood = o.mood === "all" ? pick(Object.keys(MR)) : o.mood, harm = o.harm === "auto" ? pick(Object.keys(HO)) : o.harm;
+  let base = cat === "cool" ? rr(170, 280) : cat === "warm" ? rr(-25, 55) : cat === "neutral" ? (Math.random() < .6 ? rr(60, 170) : rr(280, 335)) : rr(0, 360);
+  const [sr, lr] = MR[mood], ls = [0, 1, 2, 3].map(i => lr[0] + (lr[1] - lr[0]) * (i + Math.random() * .8) / 3.8).sort(() => Math.random() - .5);
+  const colors = HO[harm].map((off, i) => { const s = cat === "mono" ? rr(0, 7) : rr(sr[0], sr[1]), l = harm === "mono" || cat === "mono" ? lr[0] + (lr[1] - lr[0]) * i / 3 : ls[i]; return hex(base + off + rr(-6, 6), s, l); });
+  if (mood === "neon" && Math.random() < .6) colors[0] = hex(base + 200, rr(40, 60), rr(8, 14));
+  const nm = (arr, k) => (arr.find(a => a[0] === k) || [0, ""])[1];
+  return [`${nm(MOODS, mood)}・${cat === "mono" ? "無彩色" : nm(HARMS, harm)}`, colors];
+}
+let cssDone = false;
+function css(){ if (cssDone) return; cssDone = true; const s = document.createElement("style"); s.textContent = `
+.pal-wrap{display:grid;gap:10px}
+.pal-tabs,.pal-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.pal-tabs button,.pal-chips button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12px;color:var(--fg)}
+.pal-tabs button[aria-pressed="true"],.pal-chips button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.pal-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pal-row{border:1px solid var(--line);border-radius:9px;padding:6px;display:grid;gap:5px;background:var(--surface)}
+.pal-row[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.pal-row .nm{border:0;background:none;padding:0;text-align:left;font-size:12px;font-weight:500;color:var(--fg);display:flex;justify-content:space-between;gap:6px}
+.pal-row .nm span{color:var(--muted);font-weight:400;font-size:11px}
+.pal-sw{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.pal-sw button{height:26px;border-radius:5px;border:1px solid rgba(0,0,0,.12);padding:0}
+.pal-act{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pal-act button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--fg)}
+.pal-act button.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink,#fff)}
+.pal-gopt{display:grid;gap:5px}.pal-gopt>span{font-size:11.5px;color:var(--muted)}
+.pal-note{font-size:11.5px;color:var(--muted);margin:0}`; document.head.append(s); }
+/* opts: { onColor(hex), actions: [{label, fn(colors, name)}], storeKey } */
+function mount(el, opts){
+  css(); const st = (() => { try{ return JSON.parse(localStorage.getItem(opts.storeKey || "pal.st")) || {}; }catch(e){ return {}; } })();
+  const S = Object.assign({ tab: 0, cat: "all", mood: "all", harm: "auto", made: [] }, st); let cur = null;
+  const save = () => { try{ localStorage.setItem(opts.storeKey || "pal.st", JSON.stringify({ tab: S.tab, cat: S.cat, mood: S.mood, harm: S.harm, made: S.made.slice(0, 12) })); }catch(e){} };
+  el.textContent = ""; el.classList.add("pal-wrap");
+  const tabs = document.createElement("div"); tabs.className = "pal-tabs";
+  const body = document.createElement("div"); body.style.display = "grid"; body.style.gap = "10px";
+  const act = document.createElement("div"); act.className = "pal-act";
+  const note = document.createElement("p"); note.className = "pal-note"; note.textContent = "色をタップすると、その色だけを使います。パレットの名前をタップすると、まとめて使うボタンが出ます。";
+  el.append(tabs, note, body, act);
+  const names = GROUPS.map(g => g[0]).concat(["ガチャ"]);
+  function renderTabs(){ tabs.textContent = ""; names.forEach((n, i) => { const b = document.createElement("button"); b.textContent = n; b.setAttribute("aria-pressed", S.tab === i); b.onclick = () => { S.tab = i; save(); renderTabs(); renderBody(); }; tabs.append(b); }); }
+  function row(name, colors, sub){
+    const r = document.createElement("div"); r.className = "pal-row"; r.setAttribute("aria-current", !!(cur && cur[1].join() === colors.join()));
+    const nm = document.createElement("button"); nm.className = "nm"; nm.textContent = name; if (sub){ const s = document.createElement("span"); s.textContent = sub; nm.append(s); }
+    nm.onclick = () => { cur = [name, colors]; renderBody(); renderAct(); };
+    const sw = document.createElement("div"); sw.className = "pal-sw";
+    colors.forEach(c => { const b = document.createElement("button"); b.style.background = c; b.title = c; b.setAttribute("aria-label", `${name}の ${c}`); b.onclick = () => opts.onColor && opts.onColor(c); sw.append(b); });
+    r.append(nm, sw); return r;
+  }
+  function chips(list, key){ const w = document.createElement("div"); w.className = "pal-chips"; list.forEach(([k, l]) => { const b = document.createElement("button"); b.textContent = l; b.setAttribute("aria-pressed", S[key] === k); b.onclick = () => { S[key] = k; save(); renderBody(); }; w.append(b); }); return w; }
+  function opt(label, node){ const d = document.createElement("div"); d.className = "pal-gopt"; const s = document.createElement("span"); s.textContent = label; d.append(s, node); return d; }
+  function renderBody(){
+    body.textContent = "";
+    if (S.tab < GROUPS.length){ const list = document.createElement("div"); list.className = "pal-list"; GROUPS[S.tab][1].forEach(([n, c]) => list.append(row(n, c))); body.append(list); return; }
+    body.append(opt("色系統", chips(CATS, "cat")), opt("色の雰囲気", chips(MOODS, "mood")), opt("配色の組み立て", chips(HARMS, "harm")));
+    const go = document.createElement("div"); go.className = "pal-act"; const b = document.createElement("button"); b.className = "pri"; b.textContent = "この条件でランダム配色";
+    b.onclick = () => { const p = gen(S); S.made.unshift(p); S.made = S.made.slice(0, 12); cur = p; save(); renderBody(); renderAct(); }; go.append(b); body.append(go);
+    if (S.made.length){ const list = document.createElement("div"); list.className = "pal-list"; S.made.forEach(([n, c], i) => list.append(row(n, c, i === 0 ? "最新" : ""))); body.append(list); }
+  }
+  function renderAct(){ act.textContent = ""; if (!cur) return; const lab = document.createElement("span"); lab.className = "pal-note"; lab.textContent = `「${cur[0]}」を：`; act.append(lab);
+    (opts.actions || []).forEach(a => { const b = document.createElement("button"); b.textContent = a.label; b.onclick = () => a.fn(cur[1].slice(), cur[0]); act.append(b); }); }
+  renderTabs(); renderBody();
+}
+return { mount, gen, GROUPS };
+})();
+
+/* Built-in designs for the public edition: regenerated from the user's own name. */
+const PUB_RECIPES = [
+  { id: "p_hair", name: "ヘアライン", enc: "glyph", shape: "line", theme: "minimal", seed: 3, genre: "透明感" },
+  { id: "p_mode", name: "モード", enc: "glyph", shape: "line", theme: "elegant", seed: 5, genre: "エレガント" },
+  { id: "p_pulse", name: "パルス", enc: "glyph", shape: "line", theme: "pop", seed: 8, genre: "ポップ" },
+  { id: "p_spark", name: "スパークル", enc: "glyph", shape: "line", theme: "sparkle", seed: 37, genre: "キラキラ" },
+  { id: "p_thorn", name: "いばら", enc: "glyph", shape: "line", theme: "gothic", seed: 41, genre: "ゴシック" },
+  { id: "p_morse", name: "モールス", enc: "morse", shape: "line", theme: "minimal", seed: 7, genre: "読めない" },
+  { id: "p_rune", name: "ルーン", enc: "rune", shape: "line", theme: "art", seed: 11, genre: "読めない" },
+  { id: "p_beat", name: "ビート", enc: "beat", shape: "line", theme: "minimal", seed: 13, genre: "読めない" },
+  { id: "p_beads", name: "ビーズ", enc: "beads", shape: "line", theme: "elegant", seed: 17, genre: "読めない" },
+  { id: "p_twotier", name: "2段組", enc: "glyph", shape: "twotier", theme: "art", seed: 19, genre: "文字あり" },
+  { id: "p_wave", name: "波", enc: "morse", shape: "wave", theme: "minimal", seed: 23, genre: "読めない" },
+  { id: "p_zig", name: "ジグザグ", enc: "morse", shape: "zigzag", theme: "art", seed: 29, genre: "読めない" },
+  { id: "p_conv", name: "3本の線", enc: "beads", shape: "converge", theme: "minimal", seed: 31, genre: "読めない" },
+  { id: "p_edge", name: "エッジ", enc: "glyph", shape: "vert", theme: "art", seed: 43, genre: "アート" },
+  { id: "p_ladder", name: "ラダー", enc: "beat", shape: "vert", theme: "art", seed: 47, genre: "読めない" },
+  { id: "p_chain", name: "チェーン", enc: "beads", shape: "vert", theme: "gothic", seed: 53, genre: "ゴシック" },
+  { id: "p_morsev", name: "モールス縦", enc: "morse", shape: "vert", theme: "minimal", seed: 59, genre: "読めない" },
+  { id: "p_u", name: "U字", enc: "morse", shape: "ucurve", theme: "minimal", seed: 61, genre: "読めない" },
+  { id: "p_ctl", name: "コーナー左上", enc: "morse", shape: "corner_tl", theme: "minimal", seed: 67, genre: "読めない" },
+  { id: "p_ctr", name: "コーナー右上", enc: "morse", shape: "corner_tr", theme: "minimal", seed: 71, genre: "読めない" },
+  { id: "p_cbl", name: "コーナー左下", enc: "morse", shape: "corner_bl", theme: "minimal", seed: 73, genre: "読めない" },
+  { id: "p_cbr", name: "コーナー右下", enc: "morse", shape: "corner_br", theme: "minimal", seed: 79, genre: "読めない" },
+  { id: "p_cspark", name: "キラキラ角", enc: "glyph", shape: "corner_br", theme: "sparkle", seed: 83, genre: "キラキラ" },
+  { id: "p_seal", name: "円形スタンプ", enc: "glyph", shape: "circle", theme: "gothic", seed: 89, genre: "ゴシック" },
+  { id: "p_ring", name: "リング", enc: "beads", shape: "circle", theme: "elegant", seed: 97, genre: "読めない" },
+  { id: "p_radial", name: "放射", enc: "morse", shape: "radial", theme: "minimal", seed: 101, genre: "読めない" }
+];
+const CAT_OF = { line: "line", vert: "vert", corner: "corner", round: "round" };
+function makeBuiltins(name, cs){
+  name = (name || "SIGN").trim().slice(0, 20) || "SIGN";
+  const out = [];
+  for (const r of PUB_RECIPES){
+    let g = null; try{ g = SG.make({ text: name, cs: cs || "asis", enc: r.enc, shape: r.shape, theme: r.theme, seed: r.seed }); }catch(e){}
+    if (!g) continue;
+    out.push({ id: r.id, name: r.name, cat: CAT_OF[g.place] || "line", genre: r.genre, svg: g.svg, anchor: g.anchor || undefined });
+  }
+  return out;
+}
+
+let PUB_NAME = (() => { try{ return JSON.parse(localStorage.getItem("ps.name")) || "SIGN"; }catch(e){ return "SIGN"; } })();
+let PUB_CASE = (() => { try{ return JSON.parse(localStorage.getItem("ps.case")) || "asis"; }catch(e){ return "asis"; } })();
+const BUILTIN = makeBuiltins(PUB_NAME, PUB_CASE);
+
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const ls = { get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+             set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } } };
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+/* ---------------------------------------------------------------- data */
+const CATS = [["all","すべて"],["line","横ライン"],["vert","縦ライン"],["corner","角"],["round","放射・円"],["gothic","ゴシック"],["custom","自分の署名"]];
+const SWATCHES = [
+  ["#1b1b22","墨"],["#2a2d3a","濃いグレー"],["#6f7a99","青みグレー"],["#b8bdcb","銀"],["#ffffff","白"],
+  ["#f4e9ff","パール"],["#c9a24b","金"],["#ffb067","オレンジ"],["#ff7fa8","ピンク"],["#d9434f","赤"],
+  ["#b59cff","ラベンダー"],["#8fb8ff","空色"],["#2f4fb3","群青"],["#7fd1c7","ミント"]];
+const GRADS = [
+  ["ホロ", ["#ff9ad5","#a3b8ff","#8ff0d9","#fff1a8"], 0],
+  ["オーロラ", ["#7fe0d0","#8fb8ff","#c9a8ff"], 0],
+  ["金", ["#8a6a24","#f2d58a","#a77f2e","#f6e3a6"], 0],
+  ["銀", ["#6f7686","#f4f6fa","#8b92a3","#e6e9f0"], 0],
+  ["夕焼け", ["#ff8a5c","#ff5fa2","#8a6bff"], 0],
+  ["夜空", ["#1b2a6b","#5d6ad9","#c7b8ff"], 0],
+  ["桜", ["#ffd1e1","#ff8fb3","#fff0f5"], 0],
+  ["ネオン", ["#ffb067","#ff4fa3","#7a5cff"], 0]];
+const DARK_INK = "#2a2d3a", LIGHT_INK = "#ffffff";
+
+const S = {
+  images: [], cur: -1, sigs: [], custom: [], tpls: [], cat: ls.get("ps.cat","all"), tab: "sig", stackNext: false,
+  last: (() => { const v = ls.get("ps.last2", null); return Array.isArray(v) ? v : null; })(),
+  jit: ls.get("ps.jit", 2), perAuto: ls.get("ps.perAuto", true),
+  exp: Object.assign({ fmt:"png", q:92, size:0, name:"seq", prefix:"sign" }, ls.get("ps.exp", {})),
+  results: []
+};
+
+function vbAspect(svg){
+  const m = svg.match(/viewBox\s*=\s*["']\s*([-\d.]+)[\s,]+([-\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i);
+  if (m) return parseFloat(m[4]) / parseFloat(m[3]);
+  const w = svg.match(/<svg[^>]*\swidth\s*=\s*["']([\d.]+)/i), h = svg.match(/<svg[^>]*\sheight\s*=\s*["']([\d.]+)/i);
+  return (w && h) ? parseFloat(h[1]) / parseFloat(w[1]) : 1;
+}
+function svgSized(svg, w, h){
+  let s = svg.replace(/<\?xml[^>]*>/, "");
+  s = s.replace(/<svg\b([^>]*)>/i, (m, a) => {
+    a = a.replace(/\s(width|height)\s*=\s*("[^"]*"|'[^']*')/gi, "");
+    if (!/xmlns=/.test(a)) a += ' xmlns="http://www.w3.org/2000/svg"';
+    if (!/preserveAspectRatio/.test(a)) a += ' preserveAspectRatio="none"';
+    return `<svg${a} width="${w}" height="${h}">`;
+  });
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
+}
+function makeSig(o){
+  const sig = Object.assign({}, o);
+  if (sig.svg){ sig.aspect = vbAspect(sig.svg); sig.mask = svgSized(sig.svg, 400, Math.max(1, Math.round(400 * sig.aspect))); }
+  else { sig.aspect = o.aspect || 1; sig.mask = sig.png; }
+  sig.cache = new Map(); sig.done = new Map();
+  return sig;
+}
+function allSigs(){ return S.sigs.concat(S.custom, S.temps || []); }
+function sigById(id){ return allSigs().find(s => s.id === id); }
+const gradCss = (g) => `linear-gradient(${90 + (g.angle || 0)}deg, ${g.stops.join(",")})`;
+
+/* ---------------------------------------------------------------- rasterising */
+function loadImg(src){ return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
+function svgLw(sig, lw){
+  if (!lw || Math.abs(lw - 1) < .01) return sig.svg; sig.lwc = sig.lwc || new Map(); const k = lw.toFixed(2); if (sig.lwc.has(k)) return sig.lwc.get(k);
+  const s = sig.svg.replace(/stroke-width\s*=\s*"([\d.]+)"/g, (m, v) => `stroke-width="${(+v * lw).toFixed(3)}"`).replace(/stroke-width\s*:\s*([\d.]+)/g, (m, v) => `stroke-width:${(+v * lw).toFixed(3)}`);
+  sig.lwc.set(k, s); return s;
+}
+async function sigSource(sig, w, h, lw){
+  if (sig.svg) return loadImg(svgSized(svgLw(sig, lw), w, h));
+  if (!sig.img) sig.img = await loadImg(sig.png);
+  return sig.img;
+}
+function fillKey(p){ return (p.orig ? "orig" : p.grad ? "g:" + p.grad.stops.join(",") + "@" + (p.grad.angle || 0) : p.color) + "|lw" + (p.lw || 1).toFixed(2); }
+function tint(src, w, h, p){
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const x = c.getContext("2d"); x.drawImage(src, 0, 0, w, h);
+  if (p.orig) return c;
+  x.globalCompositeOperation = "source-in";
+  if (p.grad && p.grad.stops.length > 1){
+    const a = (p.grad.angle || 0) * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    const L = (Math.abs(w * ca) + Math.abs(h * sa)) / 2;
+    const g = x.createLinearGradient(w / 2 - ca * L, h / 2 - sa * L, w / 2 + ca * L, h / 2 + sa * L);
+    p.grad.stops.forEach((s, i, arr) => g.addColorStop(i / (arr.length - 1), s));
+    x.fillStyle = g;
+  } else x.fillStyle = p.color;
+  x.fillRect(0, 0, w, h);
+  return c;
+}
+function previewRaster(sig, p){
+  const key = fillKey(p);
+  if (sig.cache.has(key)) return sig.cache.get(key);
+  const long = 1600;
+  const w = sig.aspect <= 1 ? long : Math.max(1, Math.round(long / sig.aspect));
+  const h = Math.max(1, Math.round(w * sig.aspect));
+  const fill = { orig: p.orig, color: p.color, grad: p.grad ? clone(p.grad) : null };
+  const pr = sigSource(sig, w, h, p.lw).then(src => { const c = tint(src, w, h, fill); sig.done.set(key, c); return c; });
+  sig.cache.set(key, pr);
+  return pr;
+}
+function rasterNow(sig, p){
+  const key = fillKey(p);
+  const c = sig.done.get(key);
+  if (c) return c;
+  previewRaster(sig, p).then(() => draw()).catch(() => toast("この署名を表示できませんでした"));
+  return null;
+}
+
+/* ---------------------------------------------------------------- sample image */
+function sampleCanvas(){
+  const W = 1200, H = 1500, c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d");
+  const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#f6f3fb"); g.addColorStop(1, "#e3e9f6"); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  const blob = (cx, cy, r, col) => { const rg = x.createRadialGradient(cx, cy, r * .1, cx, cy, r); rg.addColorStop(0, col); rg.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = rg; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); };
+  blob(420, 520, 420, "rgba(190,200,240,.85)"); blob(820, 760, 380, "rgba(244,200,222,.75)"); blob(600, 1180, 460, "rgba(200,236,232,.7)");
+  x.strokeStyle = "rgba(90,96,130,.35)"; x.lineWidth = 3;
+  x.beginPath(); x.ellipse(600, 600, 190, 230, 0, 0, 7); x.stroke();
+  x.beginPath(); x.moveTo(330, 1500); x.bezierCurveTo(360, 980, 840, 980, 870, 1500); x.stroke();
+  x.fillStyle = "rgba(90,96,130,.5)"; x.font = "600 34px 'Space Grotesk', sans-serif"; x.textAlign = "center";
+  x.fillText("SAMPLE", 600, 120);
+  return c;
+}
+
+/* ---------------------------------------------------------------- images & layers */
+let uid = 0;
+const DEFAULT_LAYERS = [
+  { sig: "hairline", cx: .5, cy: .78, w: 1.0, rot: 0, fx: 1, fy: 1, op: .9, color: "#6f7a99", grad: null, orig: false },
+  { sig: "corner", cx: .78, cy: .9, w: .34, rot: 0, fx: 1, fy: 1, op: .9, color: "#6f7a99", grad: null, orig: false }];
+function addSample(){
+  const c = sampleCanvas();
+  S.images = [{ id: "sample", name: "sample", bmp: c, w: c.width, h: c.height, thumb: c.toDataURL("image/jpeg", .7), layers: clone(S.last || DEFAULT_LAYERS), sel: 0, sample: true }];
+  S.cur = 0;
+}
+async function decodeFile(f){
+  try{ return await createImageBitmap(f, { imageOrientation: "from-image" }); }
+  catch(e){ const url = URL.createObjectURL(f); return loadImg(url); }
+}
+function autoLayers(im, layers){
+  return layers.map(l => { const q = Object.assign({}, l); if (S.perAuto && !q.orig && !q.grad) q.color = autoColorFor(im, q); return q; });
+}
+async function addFiles(files){
+  const list = [...files].filter(f => /^image\//.test(f.type) || /\.(png|jpe?g|webp|gif|avif)$/i.test(f.name));
+  if (!list.length) return;
+  if (S.images.length && S.images[0].sample) S.images = [];
+  const startLen = S.images.length;
+  for (const f of list){
+    try{
+      const bmp = await decodeFile(f);
+      const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight;
+      const im = { id: "i" + (++uid), name: f.name.replace(/\.[^.]+$/, ""), bmp, w, h, thumb: URL.createObjectURL(f), layers: [], sel: 0 };
+      if (S.last) im.layers = autoLayers(im, clone(S.last));
+      S.images.push(im);
+    }catch(e){ toast(`「${f.name}」を読み込めませんでした`); }
+  }
+  S.cur = Math.min(startLen, S.images.length - 1);
+  refreshAll();
+  toast(`${S.images.length - startLen}枚の画像を読み込みました`);
+}
+function curImg(){ return S.images[S.cur]; }
+function curPlace(){ const i = curImg(); return i && i.layers[i.sel] || null; }
+function refreshAll(){ renderStrip(); renderLayers(); syncAdj(); draw(); }
+
+/* ---------------------------------------------------------------- analysis */
+function lumaGrid(im, max = 180){
+  if (im._luma) return im._luma;
+  const k = max / Math.max(im.w, im.h), w = Math.max(1, Math.round(im.w * k)), h = Math.max(1, Math.round(im.h * k));
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d", { willReadFrequently: true });
+  x.fillStyle = "#fff"; x.fillRect(0, 0, w, h); x.drawImage(im.bmp, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data, L = new Float32Array(w * h), G = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) L[i] = (0.2126 * d[i*4] + 0.7152 * d[i*4+1] + 0.0722 * d[i*4+2]) / 255;
+  for (let y = 1; y < h - 1; y++) for (let xx = 1; xx < w - 1; xx++){ const i = y * w + xx; G[i] = Math.abs(L[i+1] - L[i-1]) + Math.abs(L[i+w] - L[i-w]); }
+  return (im._luma = { w, h, L, G });
+}
+function boxOf(im, p, sig){
+  const sw = p.w * im.w, sh = sw * sig.aspect, r = p.rot * Math.PI / 180;
+  const bw = Math.abs(sw * Math.cos(r)) + Math.abs(sh * Math.sin(r)), bh = Math.abs(sw * Math.sin(r)) + Math.abs(sh * Math.cos(r));
+  return { bw: bw / im.w, bh: bh / im.h };
+}
+function regionStat(im, cx, cy, bw, bh){
+  const g = lumaGrid(im);
+  const x0 = Math.max(0, Math.floor((cx - bw/2) * g.w)), x1 = Math.min(g.w, Math.ceil((cx + bw/2) * g.w));
+  const y0 = Math.max(0, Math.floor((cy - bh/2) * g.h)), y1 = Math.min(g.h, Math.ceil((cy + bh/2) * g.h));
+  let sl = 0, sg = 0, n = 0;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++){ const i = y * g.w + x; sl += g.L[i]; sg += g.G[i]; n++; }
+  return n ? { l: sl / n, g: sg / n } : { l: .5, g: 1 };
+}
+function autoColorFor(im, p){
+  const sig = sigById(p.sig); if (!sig) return p.color;
+  const b = boxOf(im, p, sig); const st = regionStat(im, p.cx, p.cy, Math.max(b.bw, .02), Math.max(b.bh, .02));
+  return st.l > .55 ? (st.l > .8 ? "#6f7a99" : DARK_INK) : LIGHT_INK;
+}
+function suggestSpot(im, p){
+  const sig = sigById(p.sig); const b = boxOf(im, p, sig);
+  const across = b.bw >= .85, tall = b.bh >= .85;
+  let best = null; const xs = [];
+  for (let v = .04; v <= .961; v += .02) xs.push(v);
+  for (const cx of (across ? [.5] : xs)) for (const cy of (tall ? [.5] : xs)){
+    if (!across && (cx - b.bw/2 < .02 || cx + b.bw/2 > .98)) continue;
+    if (!tall && (cy - b.bh/2 < .02 || cy + b.bh/2 > .98)) continue;
+    const st = regionStat(im, cx, cy, b.bw, b.bh);
+    const centre = 1 - Math.min(1, Math.hypot(cx - .5, cy - .42) / .5);
+    const score = st.g + centre * .02;
+    if (!best || score < best.s) best = { s: score, cx, cy };
+  }
+  return best;
+}
+
+/* ---------------------------------------------------------------- drawing */
+const cv = $("#cv"), ctx = cv.getContext("2d");
+let view = { ox: 0, oy: 0, s: 1, dw: 1, dh: 1 }, showBox = false, drawQueued = false;
+function sizeCanvas(){
+  const r = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+  const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+  if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  return { cw: r.width, ch: r.height, dpr };
+}
+function olTint(raster, col){
+  const m = raster.__ol || (raster.__ol = new Map()); if (m.has(col)) return m.get(col);
+  const c = document.createElement("canvas"); c.width = raster.width; c.height = raster.height; const x = c.getContext("2d"); x.drawImage(raster, 0, 0); x.globalCompositeOperation = "source-in"; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height);
+  if (m.size > 6) m.clear(); m.set(col, c); return c;
+}
+function drawSig(x, p, ox, oy, dw, dh, raster, aspect){
+  const sw = p.w * dw, sh = sw * aspect;
+  x.save(); x.translate(ox + p.cx * dw, oy + p.cy * dh); x.rotate(p.rot * Math.PI / 180); x.scale(p.fx, p.fy);
+  x.globalAlpha = p.op;
+  if (p.ol > 0){ const t = olTint(raster, p.olC || "#ffffff"), r = Math.max(dw, dh) * p.ol * .0009, n = Math.max(12, Math.min(32, Math.round(r * 2)));
+    x.save(); if (p.olG > 0){ x.shadowColor = p.olC || "#ffffff"; x.shadowBlur = Math.max(dw, dh) * .02 * p.olG; }
+    for (let k = 0; k < n; k++){ const a = k / n * Math.PI * 2; x.drawImage(t, -sw / 2 + Math.cos(a) * r, -sh / 2 + Math.sin(a) * r, sw, sh); } x.restore(); }
+  x.drawImage(raster, -sw / 2, -sh / 2, sw, sh); x.restore();
+  return { sw, sh };
+}
+function draw(){
+  if (drawQueued) return; drawQueued = true;
+  requestAnimationFrame(() => {
+    drawQueued = false;
+    const { cw, ch, dpr } = sizeCanvas();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cw, ch);
+    const im = curImg(); $("#sampleBadge").hidden = !(im && im.sample);
+    if (!im) return;
+    const pad = 10, s = Math.min((cw - pad * 2) / im.w, (ch - pad * 2) / im.h) * vz;
+    const dw = im.w * s, dh = im.h * s;
+    if (vz > 1){ const mx = Math.max(0, (dw - cw) / 2 + 40), my = Math.max(0, (dh - ch) / 2 + 40); vpx = clamp(vpx, -mx, mx); vpy = clamp(vpy, -my, my); }
+    const ox = (cw - dw) / 2 + vpx, oy = (ch - dh) / 2 + vpy;
+    view = { ox, oy, s, dw, dh };
+    ctx.drawImage(im.bmp, ox, oy, dw, dh);
+    ctx.save(); ctx.beginPath(); ctx.rect(ox, oy, dw, dh); ctx.clip();
+    for (const p of im.layers){ const sig = sigById(p.sig); if (!sig) continue; const r = rasterNow(sig, p); if (r) drawSig(ctx, p, ox, oy, dw, dh, r, sig.aspect); }
+    ctx.restore();
+    const p = curPlace(), sig = p && sigById(p.sig);
+    if (sig && (showBox || im.layers.length > 1)){
+      const sw = p.w * dw, sh = sw * sig.aspect;
+      ctx.save(); ctx.translate(ox + p.cx * dw, oy + p.cy * dh); ctx.rotate(p.rot * Math.PI / 180);
+      ctx.setLineDash([5, 4]); ctx.lineWidth = 1; ctx.globalAlpha = showBox ? 1 : .55;
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--accent");
+      ctx.strokeRect(-sw / 2 - 4, -sh / 2 - 4, sw + 8, sh + 8); ctx.restore();
+    }
+  });
+}
+new ResizeObserver(draw).observe($("#stage"));
+
+/* ---------------------------------------------------------------- gestures */
+const ptrs = new Map(); let gest = null, saveTimer = 0;
+function snapOf(im){ return JSON.stringify(im.layers); }
+function ensureHist(im){ if (im && !im.hist){ im.hist = []; im.fut = []; im.snap = snapOf(im); } }
+function commit(){
+  const im = curImg(); if (!im) return;
+  ensureHist(im);
+  { const s = snapOf(im); if (s !== im.snap){ im.hist.push(im.snap); if (im.hist.length > 80) im.hist.shift(); im.fut = []; im.snap = s; } }
+  S.last = clone(im.layers); clearTimeout(saveTimer); saveTimer = setTimeout(() => ls.set("ps.last2", S.last), 250);
+  syncAdj(); renderStrip(); renderLayers();
+}
+function hitLayer(pt){
+  const im = curImg(); if (!im) return -1;
+  for (let i = im.layers.length - 1; i >= 0; i--){
+    const p = im.layers[i], sig = sigById(p.sig); if (!sig) continue;
+    const sw = p.w * view.dw, sh = sw * sig.aspect, cx = view.ox + p.cx * view.dw, cy = view.oy + p.cy * view.dh;
+    const r = -p.rot * Math.PI / 180, dx = pt.x - cx, dy = pt.y - cy;
+    const lx = dx * Math.cos(r) - dy * Math.sin(r), ly = dx * Math.sin(r) + dy * Math.cos(r);
+    const padx = Math.max(14, 0), pady = Math.max(14, 0);
+    if (Math.abs(lx) <= sw / 2 + padx && Math.abs(ly) <= sh / 2 + pady) return i;
+  }
+  return -1;
+}
+function startGesture(){
+  const p = curPlace(); if (!p) return;
+  const pts = [...ptrs.values()];
+  gest = { p0: Object.assign({}, p), pts: pts.map(q => ({ ...q })) };
+  if (pts.length >= 2){ gest.d0 = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) || 1; gest.a0 = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x); gest.c0 = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }; }
+}
+function pos(e){ const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function pixAt(im, fx, fy){
+  if (!im.pix){ const k = Math.min(1, 1000 / Math.max(im.w, im.h)), w = Math.max(1, Math.round(im.w * k)), h = Math.max(1, Math.round(im.h * k)), c = document.createElement("canvas"); c.width = w; c.height = h;
+    const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im.bmp, 0, 0, w, h); im.pix = { w, h, d: x.getImageData(0, 0, w, h).data }; }
+  const { w, h, d } = im.pix, cx = Math.floor(fx * (w - 1)), cy = Math.floor(fy * (h - 1)); let r = 0, g = 0, b = 0, n = 0;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){ const x = clamp(cx + dx, 0, w - 1), y = clamp(cy + dy, 0, h - 1), j = (y * w + x) * 4; r += d[j]; g += d[j + 1]; b += d[j + 2]; n++; }
+  return "#" + [r / n, g / n, b / n].map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+}
+cv.addEventListener("pointerdown", e => {
+  const im = curImg(); if (!im) return;
+  const pt = pos(e);
+  if (S.pick){ S.pick = false; cv.style.cursor = ""; const fx = (pt.x - view.ox) / view.dw, fy = (pt.y - view.oy) / view.dh;
+    if (fx < 0 || fx > 1 || fy < 0 || fy > 1){ toast("スポイトをやめました"); return; }
+    const hex = pixAt(im, fx, fy); setFill(q => { q.color = hex; q.grad = null; q.orig = false; }); $("#origColor").checked = false; commit(); renderSwatches(); toast(`${hex} を署名に使いました`); return; }
+  if (!ptrs.size && !panning && vz > 1 && (!im.layers.length || hitLayer(pt) < 0)){
+    panning = { id: e.pointerId, x: pt.x, y: pt.y, px: vpx, py: vpy }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; return;
+  }
+  if (!im.layers.length) return;
+  if (!ptrs.size && im.layers.length > 1){ const h = hitLayer(pt); if (h >= 0 && h !== im.sel){ im.sel = h; renderLayers(); syncAdj(); } }
+  cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pt); showBox = true; $("#hint").hidden = true; startGesture(); draw();
+});
+cv.addEventListener("pointermove", e => {
+  if (!ptrs.has(e.pointerId) || !gest) return;
+  ptrs.set(e.pointerId, pos(e));
+  const p = curPlace(), p0 = gest.p0, pts = [...ptrs.values()];
+  if (pts.length === 1 && gest.pts.length === 1){
+    p.cx = p0.cx + (pts[0].x - gest.pts[0].x) / view.dw; p.cy = p0.cy + (pts[0].y - gest.pts[0].y) / view.dh;
+  } else if (pts.length >= 2 && gest.d0){
+    const d = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y), a = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+    const c = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    p.w = clamp(p0.w * d / gest.d0, .02, 2.5);
+    p.rot = norm(p0.rot + (a - gest.a0) * 180 / Math.PI);
+    p.cx = p0.cx + (c.x - gest.c0.x) / view.dw; p.cy = p0.cy + (c.y - gest.c0.y) / view.dh;
+  }
+  p.cx = clamp(p.cx, -.3, 1.3); p.cy = clamp(p.cy, -.3, 1.3);
+  draw();
+});
+function endPtr(e){ if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId); if (ptrs.size) startGesture(); else { gest = null; showBox = false; draw(); commit(); } }
+cv.addEventListener("pointerup", endPtr); cv.addEventListener("pointercancel", endPtr);
+cv.addEventListener("wheel", e => {
+  const p = curPlace(); if (!p) return; e.preventDefault();
+  if (e.shiftKey) p.rot = norm(p.rot + (e.deltaY > 0 ? 2 : -2));
+  else p.w = clamp(p.w * Math.exp(-e.deltaY * .0015), .02, 2.5);
+  draw(); clearTimeout(cv._wt); cv._wt = setTimeout(commit, 200);
+}, { passive: false });
+cv.addEventListener("keydown", e => {
+  const p = curPlace(), im = curImg(); if (!p) return;
+  const st = e.shiftKey ? .02 : .005; let used = true;
+  if (e.key === "ArrowLeft") p.cx -= st; else if (e.key === "ArrowRight") p.cx += st;
+  else if (e.key === "ArrowUp") p.cy -= st; else if (e.key === "ArrowDown") p.cy += st;
+  else if (e.key === "+" || e.key === "=") p.w = clamp(p.w * 1.04, .02, 2.5); else if (e.key === "-") p.w = clamp(p.w / 1.04, .02, 2.5);
+  else if (e.key === "[") p.rot = norm(p.rot - 1); else if (e.key === "]") p.rot = norm(p.rot + 1);
+  else if (e.key === "Tab" && im.layers.length > 1 && e.altKey){ im.sel = (im.sel + 1) % im.layers.length; }
+  else used = false;
+  if (used){ e.preventDefault(); draw(); commit(); }
+});
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const norm = (d) => { d = ((d + 180) % 360 + 360) % 360 - 180; return Math.round(d * 10) / 10; };
+
+/* ---------------------------------------------------------------- strip & layer bar */
+function renderStrip(){
+  const el = $("#strip"); el.textContent = "";
+  S.images.forEach((im, i) => {
+    const w = document.createElement("div"); w.className = "tw";
+    const b = document.createElement("button"); b.className = "thumb"; b.setAttribute("aria-current", i === S.cur ? "true" : "false");
+    b.setAttribute("aria-label", `${im.name}${im.layers.length ? `（署名${im.layers.length}つ）` : ""}`);
+    const img = document.createElement("img"); img.src = im.thumb; img.alt = ""; b.append(img);
+    if (im.layers.length){ const d = document.createElement("span"); d.className = "dot"; b.append(d); }
+    b.onclick = () => { S.cur = i; resetView(); refreshAll(); };
+    w.append(b);
+    if (i === S.cur && !im.sample){
+      const x = document.createElement("button"); x.className = "tdel"; x.textContent = "✕"; x.setAttribute("aria-label", `${im.name}を一覧から消す`);
+      x.onclick = (e) => { e.stopPropagation();
+        if (x.classList.contains("armed")){ removeImage(i); return; }
+        x.classList.add("armed"); x.textContent = "消す"; setTimeout(() => { if (x.isConnected){ x.classList.remove("armed"); x.textContent = "✕"; } }, 3000); };
+      w.append(x);
+    }
+    el.append(w);
+  });
+  const add = document.createElement("label"); add.className = "add-img file-btn"; add.style.display = "grid"; add.style.placeItems = "center";
+  add.innerHTML = '<span>＋<br>画像</span><input type="file" accept="image/*" multiple aria-label="画像を追加">';
+  add.querySelector("input").onchange = (e) => { addFiles(e.target.files); e.target.value = ""; };
+  el.append(add);
+}
+function renderLayers(){
+  const el = $("#layerBar"); el.textContent = ""; const im = curImg(); if (!im) return;
+  im.layers.forEach((p, i) => {
+    const sig = sigById(p.sig); if (!sig) return;
+    const b = document.createElement("button"); b.className = "layer"; b.setAttribute("aria-pressed", i === im.sel);
+    const ic = document.createElement("i"); ic.style.setProperty("--m", `url("${sig.mask}")`);
+    if (p.grad) ic.style.background = gradCss(p.grad); else if (!p.orig) ic.style.background = p.color === "#ffffff" ? "var(--fg)" : p.color;
+    const t = document.createElement("span"); t.textContent = sig.name;
+    b.append(ic, t); b.onclick = () => { im.sel = i; renderLayers(); syncAdj(); draw(); };
+    el.append(b);
+  });
+  const add = document.createElement("button"); add.className = "layer add"; add.textContent = im.layers.length ? "＋ 重ねる" : "＋ 署名を置く";
+  add.onclick = () => startStack();
+  ensureHist(im);
+  const u = document.createElement("button"); u.className = "layer undo"; u.textContent = "↶ 戻す"; u.disabled = !im.hist.length; u.setAttribute("aria-label", "ひとつ前に戻す"); u.onclick = undo;
+  const r = document.createElement("button"); r.className = "layer undo"; r.textContent = "↷ やり直す"; r.disabled = !im.fut.length; r.setAttribute("aria-label", "やり直す"); r.onclick = redo;
+  queueMicrotask(() => el.append(u, r));
+  el.append(add);
+}
+function startStack(){
+  const im = curImg(); S.stackNext = !!(im && im.layers.length); setTab("sig");
+  $("#stackBanner").hidden = !S.stackNext;
+  if (S.stackNext) toast("重ねる署名を選んでください");
+}
+$("#stackCancel").onclick = () => { S.stackNext = false; $("#stackBanner").hidden = true; };
+$("#stage").addEventListener("dragover", e => { e.preventDefault(); });
+$("#stage").addEventListener("drop", e => { e.preventDefault(); addFiles(e.dataTransfer.files); });
+document.addEventListener("paste", e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) addFiles(fs); });
+
+/* ---------------------------------------------------------------- signature panel */
+function renderCats(){
+  const el = $("#cats"); el.textContent = "";
+  for (const [k, label] of CATS){
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", S.cat === k);
+    b.onclick = () => { S.cat = k; ls.set("ps.cat", k); renderCats(); renderSigs(); };
+    el.append(b);
+  }
+}
+function armDelete(d, onConfirm){
+  const arm = (ev) => { ev.stopPropagation();
+    if (d.classList.contains("armed")){ onConfirm(); return; }
+    d.classList.add("armed"); d.textContent = "削除する"; setTimeout(() => { d.classList.remove("armed"); d.textContent = "✕"; }, 3000); };
+  d.onclick = arm; d.onkeydown = (ev) => { if (ev.key === "Enter" || ev.key === " ") arm(ev); };
+}
+function renderSigs(){
+  const el = $("#sigGrid"); el.textContent = "";
+  const list = allSigs().filter(s => !s.temp).filter(s => S.cat === "all" || s.cat === S.cat || (S.cat === "gothic" && s.genre === "ゴシック"));
+  const cur = curPlace();
+  if (!list.length){
+    const e = document.createElement("div"); e.className = "empty"; e.style.gridColumn = "1/-1";
+    e.textContent = S.cat === "custom" ? "まだ自分の署名はありません。下の「署名を追加」から、SVGか透過PNGを入れてください。" : "この分類の署名はありません。";
+    el.append(e); return;
+  }
+  for (const s of list){
+    const b = document.createElement("button"); b.className = "sig"; b.setAttribute("aria-pressed", !!(cur && cur.sig === s.id && !S.stackNext));
+    const art = document.createElement("div"); art.className = "art"; art.style.setProperty("--m", `url("${s.mask}")`);
+    if (s.aspect < .15) art.style.setProperty("--ms", "260% auto"); else if (s.aspect < .35) art.style.setProperty("--ms", "115% auto"); else if (s.aspect > 5) art.style.setProperty("--ms", "auto 240%");
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = s.name;
+    const gn = document.createElement("div"); gn.className = "gn"; gn.textContent = s.genre;
+    b.append(art, nm, gn);
+    b.onclick = (e) => { if (e.target.closest(".del")) return; pickSig(s); };
+    if (s.custom){
+      const d = document.createElement("span"); d.className = "del"; d.setAttribute("role", "button"); d.tabIndex = 0; d.textContent = "✕"; d.setAttribute("aria-label", `${s.name}を削除`);
+      armDelete(d, () => removeCustom(s.id)); b.append(d);
+    }
+    el.append(b);
+  }
+}
+function defaultPlaceFor(sig0, im){
+  const sig = Object.assign({}, sig0, { cat: sig0.place || sig0.cat }), a = sig.aspect;
+  if (sig.cat === "line") return { cx: .5, cy: .8, w: 1.0, rot: 0 };
+  if (sig.cat === "vert"){ const w = Math.min(.5, .82 * im.h / a / im.w); return { cx: Math.min(.93, 1 - w / 2 - .02), cy: .5, w, rot: 0 }; }
+  if (sig.cat === "corner"){
+    const w = .34, hh = (w * im.w * a / im.h) / 2, an = sig.anchor || "br";
+    return { cx: an[1] === "l" ? w / 2 + .03 : 1 - w / 2 - .03, cy: an[0] === "t" ? hh + .03 : 1 - hh - .03, w, rot: 0 };
+  }
+  if (sig.cat === "round"){ const w = .26; return { cx: 1 - w / 2 - .04, cy: 1 - (w * im.w * a / im.h) / 2 - .04, w, rot: 0 }; }
+  const w = a > 1.5 ? .12 : .4; return { cx: .5, cy: .82, w, rot: 0 };
+}
+function pickSig(s){
+  const im = curImg(); if (!im) return;
+  const prev = curPlace();
+  const base = defaultPlaceFor(s, im);
+  const keep = prev ? { op: prev.op, color: prev.color, grad: prev.grad ? clone(prev.grad) : null, fx: 1, fy: 1 } : { op: .9, color: DARK_INK, grad: null, fx: 1, fy: 1 };
+  const layer = Object.assign({ sig: s.id, orig: false }, keep, base);
+  if (S.stackNext || !prev){
+    if (S.stackNext && prev && Math.abs(prev.cy - layer.cy) < .05 && prev.cx === layer.cx) layer.cy = clamp(prev.cy + .07, .05, .95);
+    im.layers.push(layer); im.sel = im.layers.length - 1;
+    S.stackNext = false; $("#stackBanner").hidden = true;
+    toast(im.layers.length > 1 ? `署名を重ねました（${im.layers.length}つ目）` : "署名を置きました");
+  } else im.layers[im.sel] = layer;
+  if (!layer.grad) layer.color = autoColorFor(im, layer);
+  commit(); renderSigs(); draw();
+}
+
+/* ---------------------------------------------------------------- adjust panel */
+const pressed = (el, on) => el.setAttribute("aria-pressed", on ? "true" : "false");
+function setFill(mut){ const p = curPlace(); if (!p) return; mut(p); draw(); renderLayers(); }
+function renderSwatches(){
+  const el = $("#swatches"); el.textContent = "";
+  const p = curPlace();
+  for (const [c, label] of SWATCHES){
+    const b = document.createElement("button"); b.className = "sw"; b.style.setProperty("--c", c); b.setAttribute("aria-label", label); b.title = label;
+    pressed(b, p && !p.grad && !p.orig && p.color.toLowerCase() === c);
+    b.onclick = () => { setFill(q => { q.color = c; q.grad = null; q.orig = false; }); $("#origColor").checked = false; commit(); };
+    el.append(b);
+  }
+  const pick = document.createElement("label"); pick.className = "sw-pick"; pick.title = "好きな色";
+  pick.innerHTML = '<span>＋</span><input type="color" aria-label="好きな色を選ぶ">';
+  const inp = pick.querySelector("input"); if (p) inp.value = /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : "#2a2d3a";
+  inp.oninput = () => setFill(q => { q.color = inp.value; q.grad = null; q.orig = false; });
+  inp.onchange = () => commit();
+  el.append(pick);
+  const dp = document.createElement("button"); dp.className = "sw-pick"; dp.title = "スポイト：画像の色を拾う"; dp.setAttribute("aria-label", "スポイトで画像から色を拾う"); dp.innerHTML = "<span>💧</span>"; dp.style.borderStyle = "solid";
+  dp.onclick = () => { if (!curPlace()){ toast("先に署名を置いてください"); return; } S.pick = true; cv.style.cursor = "crosshair"; toast("画像をタップすると、その色を署名に使います"); };
+  el.append(dp);
+  // gradients
+  const ge = $("#gradSw"); ge.textContent = "";
+  for (const [label, stops, angle] of GRADS){
+    const b = document.createElement("button"); b.className = "sw"; b.style.setProperty("--c", gradCss({ stops, angle })); b.setAttribute("aria-label", "グラデーション " + label); b.title = label;
+    pressed(b, p && p.grad && p.grad.stops.join() === stops.join());
+    b.onclick = () => { setFill(q => { q.grad = { stops: stops.slice(), angle: q.grad ? q.grad.angle : angle }; q.orig = false; }); commit(); };
+    ge.append(b);
+  }
+  const g = p && p.grad;
+  const a = g ? g.stops[0] : "#ff9ad5", z = g ? g.stops[g.stops.length - 1] : "#8fb8ff";
+  $("#gA").style.setProperty("--c", a); $("#gA input").value = a;
+  $("#gB").style.setProperty("--c", z); $("#gB input").value = z;
+  $("#sAng").value = g ? g.angle : 0; $("#oAng").textContent = (g ? g.angle : 0) + "°";
+}
+function customGrad(){
+  const a = $("#gA input").value, z = $("#gB input").value;
+  $("#gA").style.setProperty("--c", a); $("#gB").style.setProperty("--c", z);
+  setFill(q => { const ang = q.grad ? q.grad.angle : +$("#sAng").value; q.grad = { stops: [a, z], angle: ang }; q.orig = false; });
+}
+$("#gA input").oninput = customGrad; $("#gB input").oninput = customGrad;
+$("#gA input").onchange = () => { commit(); }; $("#gB input").onchange = () => { commit(); };
+$("#sAng").oninput = (e) => { const v = +e.target.value; $("#oAng").textContent = v + "°"; setFill(q => { if (!q.grad) q.grad = { stops: [$("#gA input").value, $("#gB input").value], angle: v }; else q.grad.angle = v; q.orig = false; }); };
+$("#sAng").onchange = commit;
+function syncAdj(){
+  const p = curPlace(), im = curImg();
+  $("#toAdjRow").hidden = !(S.tab === "sig" && p);
+  $("#adjEmpty").hidden = !!p; $("#adjBody").hidden = !p;
+  renderSwatches(); renderSigs();
+  if (!p) return;
+  const sig = sigById(p.sig);
+  $("#sSize").value = Math.round(p.w * 100); $("#oSize").textContent = Math.round(p.w * 100) + "%";
+  $("#sRot").value = Math.round(p.rot); $("#oRot").textContent = Math.round(p.rot) + "°";
+  $("#sOp").value = Math.round(p.op * 100); $("#oOp").textContent = Math.round(p.op * 100) + "%";
+  $("#sLw").value = Math.round((p.lw || 1) * 100); $("#oLw").textContent = Math.round((p.lw || 1) * 100) + "%"; $("#lwRow").hidden = !(sig && sig.svg);
+  $("#sOl").value = p.ol || 0; $("#oOl").textContent = p.ol ? String(p.ol) : "なし"; $("#sOlG").value = Math.round((p.olG || 0) * 100); $("#oOlG").textContent = Math.round((p.olG || 0) * 100) + "%";
+  $("#olPick").style.background = p.olC || "#ffffff"; $("#olPick input").value = p.olC || "#ffffff";
+  $("#origWrap").hidden = !(sig && sig.custom); $("#origColor").checked = !!p.orig;
+  pressed($("#flipX"), p.fx < 0); pressed($("#flipY"), p.fy < 0);
+  const n = im.layers.length;
+  $("#lyBack").disabled = im.sel === 0; $("#lyFront").disabled = im.sel >= n - 1;
+}
+function bindSlider(id, out, fn, fmt){
+  const el = $(id);
+  el.addEventListener("input", () => { const p = curPlace(); if (!p) return; fn(p, +el.value); $(out).textContent = fmt(+el.value); draw(); });
+  el.addEventListener("change", commit);
+}
+bindSlider("#sSize", "#oSize", (p, v) => p.w = v / 100, v => v + "%");
+bindSlider("#sRot", "#oRot", (p, v) => p.rot = v, v => v + "°");
+bindSlider("#sOp", "#oOp", (p, v) => p.op = v / 100, v => v + "%");
+bindSlider("#sLw", "#oLw", (p, v) => p.lw = v / 100, v => v + "%");
+const olAuto = (p) => { const h = (p.grad ? p.grad.stops[0] : p.color || "#2a2d3a").replace("#", ""); const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16); const l = ((n >> 16 & 255) * .299 + (n >> 8 & 255) * .587 + (n & 255) * .114) / 255; return l > .55 ? "#1b1b22" : "#ffffff"; };
+bindSlider("#sOl", "#oOl", (p, v) => { p.ol = v; if (!p.olC){ p.olC = olAuto(p); $("#olPick").style.background = p.olC; $("#olPick input").value = p.olC; } }, v => v ? String(v) : "なし");
+bindSlider("#sOlG", "#oOlG", (p, v) => p.olG = v / 100, v => v + "%");
+{ const inp = $("#olPick input"); inp.oninput = () => { const p = curPlace(); if (!p) return; p.olC = inp.value; $("#olPick").style.background = inp.value; if (!p.ol){ p.ol = 4; $("#sOl").value = 4; $("#oOl").textContent = "4"; } draw(); }; inp.onchange = commit; }
+$("#origColor").onchange = (e) => { setFill(q => { q.orig = e.target.checked; }); commit(); };
+$("#autoColor").onclick = () => { const p = curPlace(); if (!p) return; setFill(q => { q.orig = false; q.grad = null; q.color = autoColorFor(curImg(), q); }); commit(); toast("背景の明るさに合わせて色を選びました"); };
+$("#flipX").onclick = () => { const p = curPlace(); if (!p) return; p.fx *= -1; draw(); commit(); };
+$("#flipY").onclick = () => { const p = curPlace(); if (!p) return; p.fy *= -1; draw(); commit(); };
+$("#rot90").onclick = () => { const p = curPlace(); if (!p) return; p.rot = norm(p.rot + 90); draw(); commit(); };
+$("#full").onclick = () => {
+  const p = curPlace(), im = curImg(); if (!p) return; const sig = sigById(p.sig);
+  const vertical = Math.abs(Math.abs(p.rot) - 90) < 45;
+  if (vertical){ p.w = 1.02 * im.h / im.w; p.cy = .5; } else { p.w = 1.02; p.cx = .5; }
+  if (sig && sig.aspect > 1.5 && !vertical){ p.w = 1.02 * im.h / (im.w * sig.aspect); p.cy = .5; }
+  draw(); commit();
+};
+$("#suggest").onclick = () => {
+  const p = curPlace(), im = curImg(); if (!p) return;
+  const b = suggestSpot(im, p);
+  if (!b){ toast("この大きさだと置ける場所が見つかりませんでした。少し小さくしてみてください"); return; }
+  p.cx = b.cx; p.cy = b.cy; if (!p.orig && !p.grad) p.color = autoColorFor(im, p); draw(); commit(); toast("描き込みの少ない場所に置きました");
+};
+(function posGrid(){
+  const el = $("#posGrid"); const spots = [0, .5, 1];
+  for (const y of spots) for (const x of spots){
+    const b = document.createElement("button"); b.style.setProperty("--x", x); b.style.setProperty("--y", y);
+    b.setAttribute("aria-label", `位置 ${["左","中央","右"][x*2]}・${["上","中央","下"][y*2]}`);
+    b.onclick = () => {
+      const p = curPlace(), im = curImg(); if (!p) return; const sig = sigById(p.sig); const bx = boxOf(im, p, sig), m = .03;
+      p.cx = x === .5 ? .5 : x === 0 ? Math.min(.5, bx.bw / 2 + m) : Math.max(.5, 1 - bx.bw / 2 - m);
+      p.cy = y === .5 ? .5 : y === 0 ? Math.min(.5, bx.bh / 2 + m) : Math.max(.5, 1 - bx.bh / 2 - m);
+      draw(); commit();
+    };
+    el.append(b);
+  }
+})();
+function moveLayer(d){ const im = curImg(); const i = im.sel, j = i + d; if (j < 0 || j >= im.layers.length) return; [im.layers[i], im.layers[j]] = [im.layers[j], im.layers[i]]; im.sel = j; draw(); commit(); }
+$("#lyBack").onclick = () => moveLayer(-1);
+$("#lyFront").onclick = () => moveLayer(1);
+$("#lyDup").onclick = () => { const im = curImg(), p = curPlace(); if (!p) return; const q = clone(p); q.cx = clamp(q.cx + .03, 0, 1); q.cy = clamp(q.cy + .03, 0, 1); im.layers.splice(im.sel + 1, 0, q); im.sel++; draw(); commit(); toast("複製しました"); };
+$("#lyAdd").onclick = () => startStack();
+$("#sJit").value = S.jit; $("#oJit").textContent = S.jit + "%";
+$("#sJit").oninput = (e) => { S.jit = +e.target.value; $("#oJit").textContent = S.jit + "%"; ls.set("ps.jit", S.jit); };
+$("#perAuto").checked = S.perAuto; $("#perAuto").onchange = (e) => { S.perAuto = e.target.checked; ls.set("ps.perAuto", S.perAuto); };
+function jitterGroup(layers){
+  const j = S.jit / 100; if (!j || !layers.length) return layers;
+  const gx = layers.reduce((a, l) => a + l.cx, 0) / layers.length, gy = layers.reduce((a, l) => a + l.cy, 0) / layers.length;
+  const dx = (Math.random() * 2 - 1) * j, dy = (Math.random() * 2 - 1) * j, k = 1 + (Math.random() * 2 - 1) * j * 1.5;
+  return layers.map(l => Object.assign({}, l, { cx: gx + (l.cx - gx) * k + dx, cy: gy + (l.cy - gy) * k + dy, w: l.w * k }));
+}
+function applyLayersToAll(layers, includeCurrent){
+  let n = 0;
+  S.images.forEach((im, i) => {
+    if (!includeCurrent && i === S.cur) return;
+    im.layers = autoLayers(im, jitterGroup(clone(layers))); im.sel = 0; n++;
+  });
+  return n;
+}
+$("#copyAll").onclick = () => {
+  const im = curImg(); if (!im || !im.layers.length) return;
+  const n = applyLayersToAll(im.layers, false);
+  renderStrip(); toast(n ? `${n}枚の画像に同じ署名をコピーしました` : "ほかの画像がまだありません");
+};
+$("#remove").onclick = () => { const im = curImg(); if (!im || !im.layers.length) return; im.layers.splice(im.sel, 1); im.sel = Math.max(0, im.sel - 1); commit(); refreshAll(); afterRemove(im); };
+$("#removeAll").onclick = () => { const im = curImg(); if (!im) return; im.layers = []; im.sel = 0; commit(); refreshAll(); afterRemove(im); };
+function restore(im, snap){ im.snap = snap; im.layers = JSON.parse(snap); im.sel = Math.min(im.sel, Math.max(0, im.layers.length - 1)); S.last = clone(im.layers); ls.set("ps.last2", S.last); refreshAll(); }
+function undo(){ const im = curImg(); if (!im) return; ensureHist(im); if (!im.hist.length) return; im.fut.push(im.snap); restore(im, im.hist.pop()); toast("ひとつ前に戻しました"); }
+function redo(){ const im = curImg(); if (!im) return; ensureHist(im); if (!im.fut.length) return; im.hist.push(im.snap); restore(im, im.fut.pop()); toast("やり直しました"); }
+document.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z") return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "")) return;
+  e.preventDefault(); e.shiftKey ? redo() : undo();
+});
+/* view zoom */
+var vz = 1, vpx = 0, vpy = 0, panning = null;
+function resetView(){ vz = 1; vpx = vpy = 0; syncZoom(); }
+function syncZoom(){ $("#zFit").textContent = Math.round(vz * 100) + "%"; $("#zOut").disabled = vz <= 1; }
+function zoomBy(f){ const nz = clamp(vz * f, 1, 8); vpx *= nz / vz; vpy *= nz / vz; vz = nz; if (vz === 1){ vpx = vpy = 0; } syncZoom(); draw(); }
+$("#zIn").onclick = () => zoomBy(1.5); $("#zOut").onclick = () => zoomBy(1 / 1.5); $("#zFit").onclick = () => { resetView(); draw(); };
+cv.addEventListener("pointermove", (e) => { if (!panning || e.pointerId !== panning.id) return; const pt = pos(e); vpx = panning.px + pt.x - panning.x; vpy = panning.py + pt.y - panning.y; draw(); });
+for (const ev of ["pointerup", "pointercancel"]) cv.addEventListener(ev, (e) => { if (panning && e.pointerId === panning.id){ panning = null; cv.style.cursor = ""; } });
+syncZoom();
+{ /* phone: drag the grip to share the screen between preview and tools */
+  const mq = window.matchMedia("(max-width:919px)"), app = document.querySelector(".app"), col = document.querySelector(".stage-col");
+  let frac = ls.get("ps.shf", .42); if (!(frac > .12 && frac < .8)) frac = .42;
+  const avail = () => app.clientHeight - (col.offsetHeight - $("#stage").offsetHeight);
+  const apply = () => {
+    if (!mq.matches){ document.documentElement.style.removeProperty("--shpx"); return; }
+    const a = avail(), h = Math.round(Math.max(110, Math.min(a - 150, a * frac)));
+    document.documentElement.style.setProperty("--shpx", h + "px"); draw();
+  };
+  let drag = null;
+  const g = $("#grip");
+  g.addEventListener("pointerdown", (e) => { g.setPointerCapture(e.pointerId); drag = { y: e.clientY, h: $("#stage").offsetHeight }; e.preventDefault(); });
+  g.addEventListener("pointermove", (e) => { if (!drag) return; const a = avail(); frac = Math.max(.12, Math.min(.8, (drag.h + e.clientY - drag.y) / a)); apply(); });
+  const end = () => { if (drag){ drag = null; ls.set("ps.shf", frac); } };
+  g.addEventListener("pointerup", end); g.addEventListener("pointercancel", end);
+  g.addEventListener("keydown", (e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown"){ e.preventDefault(); frac = Math.max(.12, Math.min(.8, frac + (e.key === "ArrowUp" ? -.04 : .04))); apply(); ls.set("ps.shf", frac); } });
+  g.addEventListener("dblclick", () => { frac = .42; apply(); ls.set("ps.shf", frac); });
+  window.addEventListener("resize", apply); if (window.visualViewport) visualViewport.addEventListener("resize", apply);
+  if (mq.addEventListener) mq.addEventListener("change", apply);
+  requestAnimationFrame(apply); }
+function afterRemove(im){ if (!im.layers.length){ setTab("sig"); toast("署名を外しました。新しい署名を選べます"); } else toast("署名を外しました"); }
+function removeImage(i){
+  const im = S.images[i]; if (!im) return;
+  try{ if (im.thumb && im.thumb.startsWith("blob:")) URL.revokeObjectURL(im.thumb); if (im.bmp && im.bmp.close) im.bmp.close(); }catch(e){}
+  S.images.splice(i, 1);
+  if (!S.images.length){ addSample(); S.cur = 0; } else S.cur = Math.min(i, S.images.length - 1);
+  refreshAll(); toast("一覧から消しました（元の画像はそのままです）");
+}
+$("#toSig1").onclick = () => setTab("sig");
+$("#toSig2").onclick = () => setTab("sig");
+$("#toAdj").onclick = () => setTab("adj");
+let stepBig = false;
+$("#stepBtn").onclick = () => { stepBig = !stepBig; $("#stepBtn").textContent = stepBig ? "大きく" : "細かく"; };
+function nudge(dx, dy){
+  const p = curPlace(), im = curImg(); if (!p) return;
+  const st = stepBig ? .02 : .003;
+  p.cx = clamp(p.cx + dx * st, -.3, 1.3); p.cy = clamp(p.cy + dy * st * im.w / im.h, -.3, 1.3); draw();
+}
+function holdBtn(btn, fn){
+  let t1 = 0, t2 = 0, on = false;
+  const stop = () => { clearTimeout(t1); clearInterval(t2); if (on){ on = false; commit(); } };
+  btn.addEventListener("pointerdown", (e) => { e.preventDefault(); on = true; fn(); t1 = setTimeout(() => { t2 = setInterval(fn, 45); }, 320); });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) btn.addEventListener(ev, stop);
+  btn.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fn(); commit(); } });
+  btn.addEventListener("click", (e) => { if (e.detail === 0){ fn(); commit(); } });
+}
+document.querySelectorAll("[data-mv]").forEach(b => { const [dx, dy] = b.dataset.mv.split(",").map(Number); holdBtn(b, () => nudge(dx, dy)); });
+$("#cenX").onclick = () => { const p = curPlace(); if (!p) return; p.cx = .5; draw(); commit(); };
+$("#cenY").onclick = () => { const p = curPlace(); if (!p) return; p.cy = .5; draw(); commit(); };
+$("#cenXY").onclick = () => { const p = curPlace(); if (!p) return; p.cx = .5; p.cy = .5; draw(); commit(); };
+
+/* ---------------------------------------------------------------- palettes */
+PAL.mount($("#palUI"), { storeKey: "ps.pal",
+  onColor: (hex) => { if (!curPlace()){ toast("先に署名を置いてください"); return; } setFill(q => { q.color = hex; q.grad = null; q.orig = false; }); $("#origColor").checked = false; commit(); renderSwatches(); },
+  actions: [
+    { label: "グラデーションにする", fn: (cs) => { if (!curPlace()) return; setFill(q => { q.grad = { stops: cs, angle: q.grad ? q.grad.angle : 0 }; q.orig = false; }); commit(); renderSwatches(); } },
+    { label: "重ねた署名に順番に塗る", fn: (cs) => { const im = curImg(); if (!im || !im.layers.length) return; im.layers.forEach((l, i) => { l.color = cs[i % cs.length]; l.grad = null; l.orig = false; }); draw(); renderLayers(); commit(); renderSwatches(); toast("署名ごとに色を変えました"); } }] });
+
+/* ---------------------------------------------------------------- public: name */
+function applyName(nm, quiet){
+  nm = (nm || "").trim().slice(0, 20) || "SIGN"; const old = PUB_NAME; PUB_NAME = nm; ls.set("ps.name", nm); $("#pubName").value = nm;
+  S.sigs = makeBuiltins(nm, PUB_CASE).map(makeSig); renderSigs(); renderLayers(); draw();
+  if (typeof GEN !== "undefined" && (!GEN.text || GEN.text === old)){ GEN.text = nm; ls.set("ps.gen", GEN); const gt = $("#genText"); if (gt) gt.value = nm; }
+  if (!quiet) toast(`「${nm}」で署名を作り直しました`);
+}
+$("#pubName").value = PUB_NAME;
+$("#aboutBtn").onclick = () => { const d = $("#about"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); };
+{ const el = $("#pubCase"); const sync = () => el.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === PUB_CASE)); el.querySelectorAll("button").forEach(x => x.onclick = () => { PUB_CASE = x.dataset.v; ls.set("ps.case", PUB_CASE); sync(); applyName(PUB_NAME, true); if (typeof GEN !== "undefined"){ GEN.cs = PUB_CASE; ls.set("ps.gen", GEN); } }); sync(); }
+$("#pubNameGo").onclick = () => applyName($("#pubName").value);
+$("#pubName").addEventListener("keydown", (e) => { if (e.key === "Enter"){ e.preventDefault(); applyName($("#pubName").value); } });
+
+/* ---------------------------------------------------------------- generator */
+S.temps = []; S.remap = {};
+const GEN = Object.assign({ text: PUB_NAME, enc: "auto", shape: "auto", theme: "auto" }, ls.get("ps.gen", {}));
+let genList = [], genSel = -1, genSeed = (Math.random() * 4294967295) >>> 0;
+function genChips(id, key, obj){
+  const el = $(id); el.textContent = "";
+  for (const [k, l] of [["auto", "おまかせ"], ...Object.entries(obj).map(([k, v]) => [k, typeof v === "string" ? v : v.n])]){
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = l; b.setAttribute("aria-pressed", GEN[key] === k);
+    b.onclick = () => { GEN[key] = k; ls.set("ps.gen", GEN); genChips(id, key, obj); }; el.append(b); }
+}
+function genRender(){
+  const el = $("#genGrid"); el.textContent = "";
+  genList.forEach((g, i) => {
+    const b = document.createElement("button"); b.className = "gcard"; b.setAttribute("aria-pressed", i === genSel);
+    const art = document.createElement("div"); art.className = "art"; art.style.setProperty("--m", `url("${g.sig.mask}")`);
+    const gn = document.createElement("div"); gn.className = "gn"; gn.textContent = `${SG.SHAPES[g.shape]}・${SG.ENCS[g.enc].replace(/（.*）/, "")}・${SG.THEMES[g.theme].n}`;
+    b.append(art, gn); b.onclick = () => genPick(i); el.append(b); });
+  $("#genAct").hidden = genSel < 0;
+}
+function genMake(fixed){
+  const text = ($("#genText").value || "").trim() || PUB_NAME; GEN.text = text; ls.set("ps.gen", GEN);
+  genSeed = (genSeed * 1664525 + 1013904223) >>> 0;
+  const opt = fixed ? { text, cs: GEN.cs, enc: fixed.enc, shape: fixed.shape, theme: fixed.theme, seed: genSeed } : { text, cs: GEN.cs, enc: GEN.enc, shape: GEN.shape, theme: GEN.theme, seed: genSeed };
+  const res = SG.batch(opt, 8);
+  if (!res.length){ toast("この文字では作れませんでした"); return; }
+  genList = res.map((g, i) => { const id = "gen_" + Date.now().toString(36) + "_" + i;
+    const sig = makeSig({ id, name: text, cat: "temp", genre: "作成中", temp: true, svg: g.svg, place: g.place, anchor: g.anchor });
+    S.temps.push(sig); return Object.assign(g, { sig }); });
+  const used = new Set(); S.images.forEach(im => im.layers.forEach(l => used.add(l.sig)));
+  S.temps = S.temps.filter((s, i, a) => used.has(s.id) || genList.some(g => g.sig === s) || i >= a.length - 40);
+  genSel = -1; genRender();
+}
+function genPick(i){
+  genSel = i; const g = genList[i];
+  if (curImg()) pickSig(g.sig); else toast("先に画像を読み込むと、重ねたところを確認できます");
+  genRender();
+}
+$("#genText").value = GEN.text;
+$("#genText").addEventListener("input", () => { $("#genWarn").hidden = SG.glyphsOK($("#genText").value || PUB_NAME); });
+$("#genWarn").hidden = SG.glyphsOK(GEN.text);
+if (!GEN.cs) GEN.cs = "asis";
+{ const el = $("#genCase"); const draw = () => { el.textContent = ""; for (const [k, l] of [["asis", "入力どおり"], ["upper", "大文字"], ["lower", "小文字"]]){ const b = document.createElement("button"); b.className = "chip"; b.textContent = l; b.setAttribute("aria-pressed", GEN.cs === k); b.onclick = () => { GEN.cs = k; ls.set("ps.gen", GEN); draw(); }; el.append(b); } }; draw(); }
+genChips("#genEnc", "enc", SG.ENCS); genChips("#genShape", "shape", SG.SHAPES); genChips("#genTheme", "theme", SG.THEMES);
+$("#genGo").onclick = () => genMake(null);
+$("#genLike").onclick = () => { const g = genList[genSel]; if (g) genMake(g); };
+$("#genAdj").onclick = () => setTab("adj");
+$("#genSave").onclick = async () => {
+  const g = genList[genSel]; if (!g) return;
+  const name = ($("#genName").value || "").trim() || `${GEN.text} ${SG.THEMES[g.theme].n}`;
+  const rec = { id: rid(), name: name.slice(0, 40), kind: "svg", data: g.svg, place: g.place, anchor: g.anchor || null, createdAt: Date.now() };
+  S.remap[rec.id] = g.sig.id;
+  const btn = $("#genSave"); btn.disabled = true;
+  try{ if (await Store.add(rec)){ $("#genName").value = ""; toast(`「${rec.name}」を自分の署名に保存しました`); } else delete S.remap[rec.id]; }
+  finally { btn.disabled = false; }
+};
+
+/* ---------------------------------------------------------------- tabs */
+function setTab(t){
+  S.tab = t;
+  { const pl = curPlace(); $("#toAdjRow").hidden = !(t === "sig" && pl); }
+  for (const k of ["sig", "gen", "adj", "tpl", "exp"]){ $("#t-" + k).setAttribute("aria-selected", k === t); $("#p-" + k).hidden = k !== t; }
+  if (t === "exp") updateNamePreview();
+  if (t !== "sig" && S.stackNext){ S.stackNext = false; $("#stackBanner").hidden = true; }
+}
+for (const k of ["sig", "gen", "adj", "tpl", "exp"]) $("#t-" + k).onclick = () => setTab(k);
+
+/* ---------------------------------------------------------------- templates */
+async function makeThumb(im, layers){
+  const k = 320 / Math.max(im.w, im.h), W = Math.round(im.w * k), H = Math.round(im.h * k);
+  const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+  x.fillStyle = "#fff"; x.fillRect(0, 0, W, H); x.drawImage(im.bmp, 0, 0, W, H);
+  for (const p of layers){ const sig = sigById(p.sig); if (!sig) continue; const r = await previewRaster(sig, p); drawSig(x, p, 0, 0, W, H, r, sig.aspect); }
+  return c.toDataURL("image/jpeg", .72);
+}
+function renderTpls(){
+  const el = $("#tplList"); el.textContent = "";
+  if (!S.tpls.length){ const e = document.createElement("div"); e.className = "empty"; e.style.gridColumn = "1/-1"; e.textContent = "まだテンプレはありません。気に入った署名の組み合わせができたら、上で名前をつけて保存してください。"; el.append(e); return; }
+  for (const t of S.tpls.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))){
+    const card = document.createElement("div"); card.className = "tpl";
+    const img = document.createElement("img"); img.alt = ""; if (t.thumb) img.src = t.thumb;
+    const body = document.createElement("div"); body.className = "body";
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = t.name;
+    const acts = document.createElement("div"); acts.className = "acts";
+    const one = document.createElement("button"); one.className = "btn sm"; one.textContent = "この画像に";
+    one.onclick = () => applyTpl(t, false);
+    const all = document.createElement("button"); all.className = "btn sm"; all.textContent = "全部に";
+    all.onclick = () => applyTpl(t, true);
+    acts.append(one, all); body.append(nm, acts);
+    const d = document.createElement("span"); d.className = "del"; d.setAttribute("role", "button"); d.tabIndex = 0; d.textContent = "✕"; d.setAttribute("aria-label", `テンプレ「${t.name}」を削除`);
+    armDelete(d, async () => { await Store.remove(t.id); toast("テンプレを削除しました"); });
+    card.append(img, body, d); el.append(card);
+  }
+}
+function applyTpl(t, all){
+  const layers = (t.layers || []).filter(l => sigById(l.sig));
+  if (!layers.length){ toast("このテンプレの署名が見つかりませんでした"); return; }
+  if (layers.length < (t.layers || []).length) toast("削除済みの署名は除いて適用しました");
+  if (all){ const n = applyLayersToAll(layers, true); toast(`${n}枚の画像に「${t.name}」を適用しました`); }
+  else { const im = curImg(); im.layers = clone(layers); im.sel = 0; toast(`「${t.name}」を適用しました`); }
+  commit(); draw();
+}
+$("#tplSave").onclick = async () => {
+  const im = curImg(); if (!im || !im.layers.length){ toast("先に署名を置いてください"); return; }
+  if (im.layers.some(l => String(l.sig).startsWith("gen_"))){ toast("「作る」で作った署名は、先に「自分の署名に保存」してからテンプレにしてください"); return; }
+  const name = ($("#tplName").value.trim() || `テンプレ ${S.tpls.length + 1}`).slice(0, 40);
+  const btn = $("#tplSave"); btn.disabled = true;
+  try{
+    const rec = { id: "tpl_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name, layers: clone(im.layers), thumb: await makeThumb(im, im.layers), createdAt: Date.now() };
+    if (await Store.add(rec)){ $("#tplName").value = ""; toast(`テンプレ「${name}」を保存しました`); }
+  } finally { btn.disabled = false; }
+};
+
+/* ---------------------------------------------------------------- storage (custom signatures + templates) */
+const Store = {
+  mode: "local", db: null, uid: null,
+  async init(){
+    if (window.claude && typeof window.claude.use === "function"){
+      try{
+        const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+        const id = user ? await user.id() : null;
+        if (db && id){ this.db = db; this.uid = id; this.mode = "cloud"; this.subscribe(); this.chip(); return; }
+      }catch(e){}
+    }
+    this.loadLocal(); this.chip();
+  },
+  col(){ return this.db.collection("data/users/" + this.uid); },
+  subscribe(){
+    const t = setTimeout(() => toast("アカウントの署名とテンプレの読み込みに時間がかかっています"), 10000);
+    this.col().onSnapshot(snap => {
+      if (!snap.metadata.fromCache) clearTimeout(t);
+      const docs = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+      setCustom(docs.filter(d => d.id.startsWith("sig_"))); setTpls(docs.filter(d => d.id.startsWith("tpl_")));
+    }, () => { clearTimeout(t); this.mode = "local"; this.loadLocal(); this.chip(); toast("アカウントに保存できないため、この端末に保存します"); });
+  },
+  key(id){ return id.startsWith("tpl_") ? "ps.tpls" : "ps.custom"; },
+  loadLocal(){ setCustom(ls.get("ps.custom", [])); setTpls(ls.get("ps.tpls", [])); },
+  saveLocal(key, list){ if (!ls.set(key, list)){ toast("この端末に保存できませんでした。容量がいっぱいか、保存が許可されていません"); return false; } return true; },
+  async add(rec){
+    if (this.mode === "cloud"){
+      const body = Object.assign({}, rec); delete body.id;
+      try{ await this.col().doc(rec.id).set(body); return true; }
+      catch(e){ toast(e && e.code === "quota_exceeded" ? "保存できる上限に達しました。使わない署名やテンプレを削除してください" : "保存できませんでした"); return false; }
+    }
+    const k = this.key(rec.id), list = ls.get(k, []); list.push(rec);
+    if (!this.saveLocal(k, list)) return false;
+    k === "ps.tpls" ? setTpls(list) : setCustom(list); return true;
+  },
+  async remove(id){
+    if (this.mode === "cloud"){ try{ await this.col().doc(id).delete(); }catch(e){ toast("削除できませんでした"); } return; }
+    const k = this.key(id), list = ls.get(k, []).filter(r => r.id !== id); this.saveLocal(k, list);
+    k === "ps.tpls" ? setTpls(list) : setCustom(list);
+  },
+  chip(){
+    const cloud = this.mode === "cloud";
+    $("#storeChip").innerHTML = "署名とテンプレの保存先：<b></b>";
+    $("#storeChip b").textContent = cloud ? "アカウント（PCとスマホで共有）" : "この端末のブラウザ";
+    $("#storeNote").textContent = cloud
+      ? "追加した署名とテンプレはアカウントに保存され、同じアカウントで開いたPCとスマホの両方で使えます。"
+      : "追加した署名とテンプレはこの端末のブラウザに保存されます。別の端末で使うときは、バックアップを保存して読み込んでください。";
+  }
+};
+function setCustom(recs){
+  S.custom = recs.map(r => makeSig({ id: r.id, name: r.name, cat: "custom", genre: "自分の署名", custom: true,
+    svg: r.kind === "svg" ? r.data : null, png: r.kind === "png" ? r.data : null, aspect: r.aspect || 1, place: r.place, anchor: r.anchor }));
+  if (S.remap){ for (const [nid, tid] of Object.entries(S.remap)) if (S.custom.some(s => s.id === nid)){ S.images.forEach(im => im.layers.forEach(l => { if (l.sig === tid) l.sig = nid; })); delete S.remap[nid]; } }
+  renderSigs(); renderLayers(); draw();
+}
+function setTpls(recs){ S.tpls = recs; renderTpls(); }
+async function removeCustom(id){
+  await Store.remove(id);
+  S.images.forEach(im => { im.layers = im.layers.filter(l => l.sig !== id); im.sel = Math.min(im.sel, Math.max(0, im.layers.length - 1)); });
+  refreshAll();
+}
+const rid = () => "sig_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+async function fileToRecord(f){
+  const name = f.name.replace(/\.[^.]+$/, "").slice(0, 40) || "署名";
+  if (/svg/i.test(f.type) || /\.svg$/i.test(f.name)){
+    const text = await f.text();
+    if (!/<svg[\s>]/i.test(text)) throw new Error("SVGとして読めませんでした");
+    if (text.length > 240000) throw new Error("SVGが大きすぎます（240KBまで）");
+    return { id: rid(), name, kind: "svg", data: text, createdAt: Date.now() };
+  }
+  const url = URL.createObjectURL(f); const img = await loadImg(url); URL.revokeObjectURL(url);
+  for (const long of [1600, 1200, 900, 700, 500]){
+    const k = Math.min(1, long / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
+    const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h);
+    const data = c.toDataURL("image/png");
+    if (data.length < 240000) return { id: rid(), name, kind: "png", data, aspect: h / w, createdAt: Date.now() };
+  }
+  throw new Error("画像が大きすぎます");
+}
+$("#addSig").onchange = async (e) => {
+  const files = [...e.target.files]; e.target.value = ""; let ok = 0;
+  for (const f of files){ try{ const rec = await fileToRecord(f); if (await Store.add(rec)) ok++; }catch(err){ toast(`「${f.name}」：${err.message}`); } }
+  if (ok){ S.cat = "custom"; renderCats(); renderSigs(); toast(`${ok}個の署名を追加しました`); }
+};
+$("#backupOut").onclick = async () => {
+  const sigs = S.custom.map(s => ({ id: s.id, name: s.name, kind: s.svg ? "svg" : "png", data: s.svg || s.png, aspect: s.aspect, place: s.place, anchor: s.anchor }));
+  if (!sigs.length && !S.tpls.length){ toast("保存する署名やテンプレがまだありません"); return; }
+  const blob = new Blob([JSON.stringify({ format: "signature-maker-signatures", version: 2, signatures: sigs, templates: S.tpls })], { type: "application/json" });
+  await saveFile("signature_maker_backup.json", blob);
+};
+$("#backupIn").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try{
+    const j = JSON.parse(await f.text());
+    const have = new Set(S.custom.map(s => s.name + "|" + (s.svg || s.png).length)); let n = 0, m = 0;
+    const idMap = {};
+    for (const r of (j && j.signatures) || []){
+      if (!r || !r.data || !/^(svg|png)$/.test(r.kind)) continue;
+      const exist = S.custom.find(s => s.name + "|" + (s.svg || s.png).length === r.name + "|" + r.data.length);
+      if (exist){ idMap[r.id] = exist.id; continue; }
+      const nid = rid(); idMap[r.id] = nid;
+      if (await Store.add({ id: nid, name: String(r.name || "署名").slice(0, 40), kind: r.kind, data: r.data, aspect: r.aspect || null, place: /^(line|vert|corner|round)$/.test(r.place) ? r.place : null, anchor: /^(tl|tr|bl|br)$/.test(r.anchor) ? r.anchor : null, createdAt: Date.now() })) n++;
+    }
+    const haveT = new Set(S.tpls.map(t => t.name + "|" + JSON.stringify(t.layers)));
+    for (const t of (j && j.templates) || []){
+      if (!t || !Array.isArray(t.layers)) continue;
+      const layers = t.layers.map(l => Object.assign({}, l, { sig: idMap[l.sig] || l.sig }));
+      if (haveT.has(t.name + "|" + JSON.stringify(layers))) continue;
+      if (await Store.add({ id: "tpl_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name: String(t.name || "テンプレ").slice(0, 40), layers, thumb: typeof t.thumb === "string" && t.thumb.startsWith("data:image/") ? t.thumb : "", createdAt: Date.now() })) m++;
+    }
+    toast(n || m ? `署名${n}個・テンプレ${m}個を読み込みました` : "新しく読み込むものはありませんでした");
+    if (n){ S.cat = "custom"; renderCats(); renderSigs(); }
+  }catch(err){ toast("バックアップのファイルを読めませんでした"); }
+};
+
+/* ---------------------------------------------------------------- export */
+function pressSeg(sel, v){ document.querySelectorAll(sel + " button").forEach(b => pressed(b, b.dataset.v === v)); }
+function saveExp(){ ls.set("ps.exp", S.exp); }
+document.querySelectorAll("#fmtSeg button").forEach(b => b.onclick = () => { S.exp.fmt = b.dataset.v; saveExp(); syncExp(); });
+document.querySelectorAll("#nameSeg button").forEach(b => b.onclick = () => { S.exp.name = b.dataset.v; saveExp(); syncExp(); });
+$("#sQ").oninput = (e) => { S.exp.q = +e.target.value; $("#oQ").textContent = S.exp.q; saveExp(); };
+$("#maxSide").onchange = (e) => { S.exp.size = +e.target.value; saveExp(); };
+$("#prefix").oninput = (e) => { S.exp.prefix = e.target.value.replace(/[\\/:*?"<>|]/g, ""); saveExp(); updateNamePreview(); };
+function syncExp(){
+  pressSeg("#fmtSeg", S.exp.fmt); pressSeg("#nameSeg", S.exp.name);
+  $("#qWrap").hidden = S.exp.fmt !== "jpg"; $("#sQ").value = S.exp.q; $("#oQ").textContent = S.exp.q;
+  $("#maxSide").value = String(S.exp.size); $("#prefix").value = S.exp.prefix;
+  $("#prefix").disabled = S.exp.name === "rand";
+  $("#dateRow").hidden = S.exp.name !== "date"; $("#prefixRow").hidden = S.exp.name === "date";
+  $("#expDate").value = expDate;
+  updateNamePreview();
+}
+const ext = () => S.exp.fmt === "jpg" ? "jpg" : "png";
+function todayStr(){ const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+let expDate = todayStr();
+const dateKey = () => (expDate || todayStr()).replace(/-/g, "");
+function outName(im, i){
+  const pre = (S.exp.prefix || "").trim();
+  if (S.exp.name === "date") return S.images.length === 1 ? `${dateKey()}.${ext()}` : `${dateKey()}_${String(i + 1).padStart(2, "0")}.${ext()}`;
+  if (S.exp.name === "orig") return `${pre ? pre + "_" : ""}${im.name}.${ext()}`;
+  if (S.exp.name === "rand") return `${Math.random().toString(36).slice(2, 10)}.${ext()}`;
+  return `${pre || "image"}_${String(i + 1).padStart(3, "0")}.${ext()}`;
+}
+function updateNamePreview(){
+  const im = curImg(); if (!im){ $("#namePreview").textContent = ""; return; }
+  let s = "例：" + outName(im, S.cur);
+  if (S.exp.name === "date" && S.images.length > 1) s += `（${S.images.length}枚なので _01〜_${String(S.images.length).padStart(2, "0")} をつけます。1枚だけなら日付のみ）`;
+  else if (S.exp.name === "date") s += "（1枚だけなので日付のみ。2枚以上なら _01, _02… をつけます）";
+  $("#namePreview").textContent = s;
+}
+$("#expDate").onchange = (e) => { expDate = e.target.value || todayStr(); updateNamePreview(); };
+$("#dateToday").onclick = () => { expDate = todayStr(); $("#expDate").value = expDate; updateNamePreview(); };
+async function renderOut(im){
+  const k = S.exp.size && Math.max(im.w, im.h) > S.exp.size ? S.exp.size / Math.max(im.w, im.h) : 1;
+  const W = Math.round(im.w * k), H = Math.round(im.h * k);
+  const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+  // Always flatten onto opaque white: drops anything hidden in the alpha channel (e.g. NovelAI stealth info).
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
+  x.imageSmoothingQuality = "high"; x.drawImage(im.bmp, 0, 0, W, H);
+  for (const p of im.layers){
+    const sig = sigById(p.sig); if (!sig) continue;
+    const sw = Math.max(1, Math.round(p.w * W));
+    const capW = Math.min(sw, 8000), capH = Math.max(1, Math.round(capW * sig.aspect));
+    const src = await sigSource(sig, capW, capH, p.lw);
+    drawSig(x, p, 0, 0, W, H, tint(src, capW, capH, p), sig.aspect);
+  }
+  // Belt and braces: force every alpha value to 255 before encoding.
+  const id = x.getImageData(0, 0, W, H), d = id.data; let fixed = false;
+  for (let i = 3; i < d.length; i += 4) if (d[i] !== 255){ d[i] = 255; fixed = true; }
+  if (fixed) x.putImageData(id, 0, 0);
+  const type = S.exp.fmt === "jpg" ? "image/jpeg" : "image/png";
+  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("書き出せませんでした")), type, S.exp.q / 100));
+}
+let downloads;
+async function saveFile(name, blob){
+  if (downloads === undefined){
+    downloads = null;
+    if (window.claude && typeof window.claude.use === "function"){ try{ downloads = await window.claude.use("downloads"); }catch(e){ downloads = null; } }
+  }
+  if (downloads){
+    try{ await downloads.save({ filename: name, data: blob }); toast(`「${name}」を保存しました`); return true; }
+    catch(e){ if (e && e.code === "declined") toast("保存をやめました"); else if (e && e.code === "rate_limited") toast("保存の確認が開いています。少し待ってからもう一度押してください"); else toast("この画面では保存できませんでした。書き出した画像を長押しして保存してください"); return false; }
+  }
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
+  toast(`「${name}」を保存しました`); return true;
+}
+function showResults(items){
+  S.results.forEach(r => URL.revokeObjectURL(r.url));
+  S.results = items.map(it => ({ name: it.name, url: URL.createObjectURL(it.blob) }));
+  const el = $("#results"); el.textContent = "";
+  for (const r of S.results){ const f = document.createElement("figure"); const i = document.createElement("img"); i.src = r.url; i.alt = r.name; const c = document.createElement("figcaption"); c.textContent = r.name; f.append(i, c); el.append(f); }
+  $("#resSec").hidden = !S.results.length;
+}
+async function busy(btn, label, fn){ const t = btn.textContent; btn.disabled = true; btn.textContent = label; try{ await fn(); } catch(e){ toast(e.message || "書き出せませんでした"); } finally { btn.disabled = false; btn.textContent = t; } }
+$("#showAll").onclick = () => busy($("#showAll"), "書き出し中…", async () => {
+  const items = [];
+  for (let i = 0; i < S.images.length; i++){ $("#showAll").textContent = `書き出し中… ${i + 1}/${S.images.length}`; items.push({ name: outName(S.images[i], i), blob: await renderOut(S.images[i]) }); }
+  showResults(items);
+  $("#resNote").textContent = items.length > 1 ? `${items.length}枚書き出しました。1枚ずつ長押しして「写真に追加」で、カメラロールに保存できます。` : "書き出しました。画像を長押しして「写真に追加」で、カメラロールに保存できます。";
+  $("#resSec").scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+$("#saveOne").onclick = () => busy($("#saveOne"), "書き出し中…", async () => {
+  const im = curImg(); if (!im) return;
+  const blob = await renderOut(im), name = outName(im, S.cur);
+  showResults([{ name, blob }]); await saveFile(name, blob);
+});
+$("#saveZip").onclick = () => busy($("#saveZip"), "書き出し中…", async () => {
+  const items = [];
+  for (let i = 0; i < S.images.length; i++){ $("#saveZip").textContent = `書き出し中… ${i + 1}/${S.images.length}`; items.push({ name: outName(S.images[i], i), blob: await renderOut(S.images[i]) }); }
+  const seen = new Map(); items.forEach(it => { const n = seen.get(it.name) || 0; seen.set(it.name, n + 1); if (n) it.name = it.name.replace(/(\.\w+)$/, `_${n + 1}$1`); });
+  showResults(items);
+  await saveFile(S.exp.name === "date" ? `${dateKey()}.zip` : `${(S.exp.prefix || "sign").trim() || "sign"}_signed.zip`, await makeZip(items));
+});
+
+/* zip (stored, no compression: images are already compressed) */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function makeZip(files){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const f of files){
+    const data = new Uint8Array(await f.blob.arrayBuffer()), nm = enc.encode(f.name), crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(12, 0x21, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, nm.length, true);
+    parts.push(lh, nm, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(14, 0x21, true);
+    ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, nm.length, true); ch.setUint32(42, off, true);
+    central.push(ch, nm); off += 30 + nm.length + data.length;
+  }
+  const size = central.reduce((a, p) => a + p.byteLength, 0), end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, size, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...central, end], { type: "application/zip" });
+}
+
+/* ---------------------------------------------------------------- toast */
+let tt = 0;
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 3200); }
+
+/* ---------------------------------------------------------------- boot */
+S.sigs = BUILTIN.map(makeSig);
+addSample(); renderCats(); renderTpls(); syncExp(); refreshAll();
+Store.init();
+window.__ys = S;
+})();
+</script>
+</body></html>
