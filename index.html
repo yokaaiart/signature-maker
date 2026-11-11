@@ -203,8 +203,8 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
 .paldet summary{cursor:pointer;font-size:13px;padding:6px 0;color:var(--accent);font-weight:500}
 .paldet[open] summary{margin-bottom:8px}
 .namebox{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
-.credit{margin:6px 0 0;font-size:12px;color:var(--muted)}.credit a{color:var(--accent)}
-.linkbtn{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;font-size:12px;cursor:pointer}
+.chip-store{display:none!important}.credit{margin:18px 0 6px;text-align:center;font-size:11px;color:var(--muted);opacity:.8}.credit a{color:inherit}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;font-size:11px;cursor:pointer;color:var(--muted)}
 .about{max-width:560px;width:calc(100% - 32px);border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--fg);padding:18px 20px;max-height:85vh;overflow:auto}
 .about::backdrop{background:rgba(10,12,20,.45)}
 .about h2{font-size:17px;margin:0 0 8px}.about h3{font-size:13px;margin:14px 0 4px;color:var(--muted)}
@@ -245,7 +245,6 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
         <div class="row"><input type="text" id="pubName" maxlength="20" autocomplete="off" placeholder="例：MOMO や @momo_art"><button class="btn sm primary" id="pubNameGo">この名前で作る</button></div>
         <div class="seg" id="pubCase" style="margin-top:6px"><button data-v="asis">入力どおり</button><button data-v="upper">大文字</button><button data-v="lower">小文字</button></div>
         <p class="note">入れた名前で、下の署名デザインが全部作り直されます。英数字と記号（@ _ . - / # + ! ? : & ♡ ★）が使えます。XのIDを入れておくと転載対策になります。ひらがななどは、文字が読めないデザインになります。</p>
-        <p class="credit">made by <a href="https://x.com/yokaAIart" target="_blank" rel="noopener">@yokaAIart</a> ・ <button type="button" class="linkbtn" id="aboutBtn">このツールについて・利用について</button></p>
       </div>
       <div class="row" id="toAdjRow" hidden><button class="btn sm" id="toAdj">← 調整に戻る</button><button class="btn sm" id="remove">選んでいる署名を外す</button><button class="btn sm" id="removeAll">全部外す</button></div>
       <div class="banner" id="stackBanner" hidden><span>選んだ署名を、今の署名に<b>重ねます</b></span><button class="btn sm" id="stackCancel">やめる</button></div>
@@ -420,6 +419,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
         <div class="results" id="results"></div>
       </div>
     </div>
+    <footer class="credit">made by <a href="https://x.com/yokaAIart" target="_blank" rel="noopener">@yokaAIart</a> ・ <button type="button" class="linkbtn" id="aboutBtn">このツールについて</button></footer>
   </section>
 </main>
 
@@ -1304,8 +1304,7 @@ function renderLayers(){
   ensureHist(im);
   const u = document.createElement("button"); u.className = "layer undo"; u.textContent = "↶ 戻す"; u.disabled = !im.hist.length; u.setAttribute("aria-label", "ひとつ前に戻す"); u.onclick = undo;
   const r = document.createElement("button"); r.className = "layer undo"; r.textContent = "↷ やり直す"; r.disabled = !im.fut.length; r.setAttribute("aria-label", "やり直す"); r.onclick = redo;
-  queueMicrotask(() => el.append(u, r));
-  el.append(add);
+  el.append(add, u, r);
 }
 function startStack(){
   const im = curImg(); S.stackNext = !!(im && im.layers.length); setTab("sig");
