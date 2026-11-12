@@ -83,6 +83,21 @@ body.multi .badge{display:none}
 .umenu button{border:0;background:none;text-align:left;padding:10px 12px;border-radius:8px;font-size:14px;color:var(--fg)}
 .umenu button:hover{background:var(--sunk)}
 .umenu p{margin:2px 12px 4px;font-size:11px;color:var(--muted)}
+.cchip{display:flex;align-items:center;gap:7px;height:36px;padding:0 12px 0 5px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);font-size:12px;color:var(--fg);font-variant-numeric:tabular-nums}
+.cchip i{display:block;width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.12);background:var(--cc,#ccc)}
+.cchip:disabled{opacity:.45}
+@media (max-width:919px){.cchip span{display:none}.cchip{padding:0 4px;height:40px}.cchip i{width:30px;height:30px}.ur{gap:4px}}
+.cpop{position:absolute;right:8px;top:52px;z-index:6;width:min(300px,calc(100% - 16px));max-height:calc(100% - 64px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 32px rgba(20,24,40,.18);padding:12px;display:grid;gap:10px}
+.cp-top{display:flex;align-items:center;gap:10px}.cp-cur{width:38px;height:38px;border-radius:50%;border:1px solid rgba(0,0,0,.12);background:var(--cc,#ccc);flex:none}
+.cp-meta{display:grid;flex:1;min-width:0}.cp-meta b{font-size:13px}.cp-meta span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cp-tools{display:flex;gap:6px}.cp-ic{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:15px;position:relative;overflow:hidden;cursor:pointer}
+.cp-ic input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.cp-row{display:flex;align-items:center;gap:10px}.cp-lab{font-size:12px;color:var(--muted)}
+.cp-recent{display:flex;gap:8px}.cp-recent button,.cp-grid button{width:28px;height:28px;border-radius:50%;border:1px solid rgba(0,0,0,.12);padding:0;background:var(--c)}
+.cp-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;justify-items:center}
+.cp-grid button[aria-pressed="true"],.cp-recent button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.cp-pal summary{font-size:13px;cursor:pointer;padding:4px 0}
+.cp-more{border:0;background:none;color:var(--accent);font-size:13px;text-align:left;padding:2px 0;text-decoration:underline}
 .ur{position:absolute;left:8px;top:8px;display:flex;gap:6px;z-index:2}
 .ur .layer.ico[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .ur .layer.ico{background:color-mix(in srgb,var(--surface) 90%,transparent);margin:0}
@@ -197,7 +212,8 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
 .lx{display:inline-grid;place-items:center;width:20px;height:20px;margin:0 -4px 0 2px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:13px;line-height:1}
 .layer.ico{width:40px;height:40px;padding:0;justify-content:center;border-radius:50%}.layer.ico svg{width:21px;height:21px}
 .layer[disabled]{opacity:.4;cursor:default}
-.zoom{position:absolute;right:8px;top:8px;display:flex;gap:4px;align-items:center;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tr{position:absolute;right:8px;top:8px;display:flex;gap:6px;align-items:center;z-index:3}
+.zoom{position:static;display:flex;gap:4px;align-items:center;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:3px}
 .zoom button{width:30px;height:30px;border-radius:50%;border:0;background:transparent;font-size:16px;line-height:1;padding:0}
 .zoom button:hover{background:var(--sunk)}
 .zoom .zv{min-width:44px;width:auto;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--muted);border-radius:999px;padding:0 6px}
@@ -305,13 +321,28 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
         <button role="menuitem" id="clearEvery">全部の画像の署名を消す</button>
         <p>消したあとも「戻す」で元に戻せます</p>
       </div>
-      <div class="zoom" aria-label="表示の拡大縮小"><button id="zOut" aria-label="縮小">−</button><button class="zv" id="zFit" aria-label="全体を表示">100%</button><button id="zIn" aria-label="拡大">＋</button></div>
-      <div class="hint" id="hint"><span>タップで選択・何もないところをタップで解除・ドラッグで移動・2本指で拡大と回転</span></div>
+      <div class="tr">
+        <button class="cchip" id="cChip" aria-haspopup="true" aria-expanded="false" title="色"><i id="cChipSw"></i><span id="cChipHex">カラー</span></button>
+        <div class="zoom" aria-label="表示の拡大縮小"><button id="zOut" aria-label="縮小">−</button><button class="zv" id="zFit" aria-label="全体を表示">100%</button><button id="zIn" aria-label="拡大">＋</button></div>
+      </div>
+      <div class="cpop" id="cPop" hidden>
+        <div class="cp-top"><i class="cp-cur" id="cpCur"></i><div class="cp-meta"><b>いまの色</b><span id="cpHex"></span></div>
+          <div class="cp-tools"><button class="cp-ic" id="cpDrop" title="スポイト：絵から色を拾う" aria-label="スポイト">💧</button><label class="cp-ic" title="好きな色を選ぶ"><span>＋</span><input type="color" id="cpPick" aria-label="好きな色を選ぶ"></label></div></div>
+        <div class="cp-row" id="cpRecentRow"><span class="cp-lab">最近の3色</span><div class="cp-recent" id="cpRecent"></div></div>
+        <div class="cp-lab">色見本</div>
+        <div class="cp-grid" id="cpGrid"></div>
+        <details class="cp-pal"><summary>パレットから選ぶ</summary><div id="cpPal"></div></details>
+        <div class="slider"><label for="cpOp">不透明度</label><input type="range" id="cpOp" min="10" max="100" step="1"><output id="cpOpO"></output></div>
+        <div class="cp-lab">重ね方</div>
+        <div class="chips cp-blend" id="cpBlend"></div>
+        <button class="cp-more" id="cpMore">グラデ・縁取り・線の太さ →</button>
+      </div>
+      <div class="hint" id="hint"><span>タップで選択・何もないところをなぞって範囲選択・ドラッグで移動・2本指で拡大と回転</span></div>
     </div>
     <div class="bars"><div class="strip" id="strip"></div>
     <div class="layers" id="layerBar" aria-label="この画像の署名"></div></div>
     <div class="abar" id="alignBar" hidden>
-        <div class="abar-top"><b id="msCount"></b><button class="btn sm" id="msAll">すべて</button><button class="btn sm primary" id="msDone">完了</button></div>
+        <div class="abar-top"><b id="msCount"></b><button class="btn sm" id="msAll">すべて</button><button class="btn sm" id="msDone">選択を外す</button></div>
         <div class="abar-btns" id="alignBtns"></div>
       </div>
     <div class="grip" id="grip" role="separator" aria-orientation="horizontal" aria-label="上下にドラッグしてプレビューと操作エリアの広さを変える" tabindex="0"><span></span></div>
@@ -1483,6 +1514,8 @@ function draw(){
     selX = null;
     if (S.multi){ for (const i of (im.ms || [])){ const q = im.layers[i], qs = q && sigById(q.sig); if (qs) corners(q, qs, .95, false); } }
     else if (sig) corners(p, sig, showBox ? 1 : .8, !showBox);
+    if (rb){ ctx.save(); const ac = getComputedStyle(document.documentElement).getPropertyValue("--accent"); ctx.strokeStyle = ac; ctx.fillStyle = "rgba(90,100,220,.08)"; ctx.lineWidth = 1; ctx.setLineDash([5, 4]);
+      const x = Math.min(rb.x0, rb.x), y = Math.min(rb.y0, rb.y), w = Math.abs(rb.x - rb.x0), h = Math.abs(rb.y - rb.y0); ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h); ctx.restore(); }
     if (guides.length){ ctx.save(); ctx.strokeStyle = "#e0559b"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
       for (const g of guides){ ctx.beginPath(); if (g.x !== undefined){ ctx.moveTo(ox + g.x * dw, oy); ctx.lineTo(ox + g.x * dw, oy + dh); } else { ctx.moveTo(ox, oy + g.y * dh); ctx.lineTo(ox + dw, oy + g.y * dh); } ctx.stroke(); }
       ctx.restore(); }
@@ -1540,7 +1573,7 @@ function hitAll(pt){
 }
 let tapInfo = null, selX = null, guides = [], lpTimer = 0;
 const msOf = (im) => (im.ms || (im.ms = []));
-function removeSel(){ const im = curImg(); if (!im || !curPlace()) return; im.layers.splice(im.sel, 1); im.sel = Math.max(0, im.sel - 1); im.noSel = true; im.ms = []; commit(); refreshAll(); afterRemove(im); }
+function removeSel(){ const im = curImg(); if (!im) return; const idx = curSelIdx(); if (idx.length > 1){ im.layers = im.layers.filter((_, i) => !idx.includes(i)); S.multi = false; im.ms = []; im.noSel = true; im.sel = 0; document.body.classList.remove("multi"); commit(); refreshAll(); syncAlign(); afterRemove(im); return; } if (!curPlace()) return; im.layers.splice(im.sel, 1); im.sel = Math.max(0, im.sel - 1); im.noSel = true; im.ms = []; commit(); refreshAll(); afterRemove(im); }
 /* snapping: centres line up with the image centre and with the other signatures */
 function snapTo(cx, cy, skip){
   const im = curImg(), tx = 7 / view.dw, ty = 7 / view.dh, xs = [.5], ys = [.5]; guides = [];
@@ -1552,48 +1585,65 @@ function snapTo(cx, cy, skip){
   return [bx === null ? cx : bx, by === null ? cy : by];
 }
 function groupBox(im, idx){ let x0 = 9, y0 = 9, x1 = -9, y1 = -9; for (const i of idx){ const p = im.layers[i], sig = sigById(p.sig); if (!sig) continue; const [hx, hy] = halfExt(p, sig, im); x0 = Math.min(x0, p.cx - hx); x1 = Math.max(x1, p.cx + hx); y0 = Math.min(y0, p.cy - hy); y1 = Math.max(y1, p.cy + hy); } return { x0, y0, x1, y1 }; }
+/* selection works like slide/design apps: click, Shift/Ctrl+click, drag a box on empty space */
+let rb = null, spaceDown = false, pan2 = null;
+function setSel(idx){
+  const im = curImg(); if (!im) return; idx = Array.from(new Set(idx)).filter(i => im.layers[i]);
+  if (idx.length >= 2){ S.multi = true; im.ms = idx; im.sel = idx[idx.length - 1]; im.noSel = false; }
+  else { S.multi = false; im.ms = []; if (idx.length){ im.sel = idx[0]; im.noSel = false; } else im.noSel = true; }
+  document.body.classList.toggle("multi", S.multi); renderLayers(); syncAdj(); syncAlign(); draw();
+}
+const curSelIdx = () => { const im = curImg(); if (!im) return []; return S.multi ? (im.ms || []).slice() : (im.noSel || !im.layers[im.sel] ? [] : [im.sel]); };
+function boxHits(x0, y0, x1, y1){
+  const im = curImg(), out = []; if (!im) return out;
+  const a = { x0: (Math.min(x0, x1) - view.ox) / view.dw, x1: (Math.max(x0, x1) - view.ox) / view.dw, y0: (Math.min(y0, y1) - view.oy) / view.dh, y1: (Math.max(y0, y1) - view.oy) / view.dh };
+  im.layers.forEach((q, i) => { const sg = sigById(q.sig); if (!sg) return; const [hx, hy] = halfExt(q, sg, im); if (q.cx + hx >= a.x0 && q.cx - hx <= a.x1 && q.cy + hy >= a.y0 && q.cy - hy <= a.y1) out.push(i); });
+  return out;
+}
+window.addEventListener("keydown", (e) => { if (e.code === "Space" && !/input|textarea|select/i.test((document.activeElement || {}).tagName || "")){ if (!spaceDown){ spaceDown = true; cv.style.cursor = "grab"; } e.preventDefault(); } });
+window.addEventListener("keyup", (e) => { if (e.code === "Space"){ spaceDown = false; if (!panning) cv.style.cursor = ""; } });
 cv.addEventListener("pointerdown", e => {
   const im = curImg(); if (!im) return;
   const pt = pos(e);
   if (S.pick){ S.pick = false; cv.style.cursor = ""; const fx = (pt.x - view.ox) / view.dw, fy = (pt.y - view.oy) / view.dh;
     if (fx < 0 || fx > 1 || fy < 0 || fy > 1){ toast("スポイトをやめました"); return; }
-    const hex = pixAt(im, fx, fy); setFill(q => { q.color = hex; q.grad = null; q.orig = false; }); $("#origColor").checked = false; commit(); renderSwatches(); toast(`${hex} を署名に使いました`); return; }
+    const hex = pixAt(im, fx, fy); setFill(q => { q.color = hex; q.grad = null; q.orig = false; }); $("#origColor").checked = false; commit(); renderSwatches(); syncColorChip(); toast(`${hex} を使いました`); return; }
+  /* panning: Space+drag or middle button with a mouse */
+  if (!ptrs.size && (spaceDown || e.button === 1)){ panning = { id: e.pointerId, x: pt.x, y: pt.y, px: vpx, py: vpy }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; e.preventDefault(); return; }
   if (!ptrs.size && selX && !S.multi && Math.hypot(pt.x - selX.x, pt.y - selX.y) < 18){ e.preventDefault(); removeSel(); return; }
-  if (!ptrs.size && !panning && vz > 1 && (!im.layers.length || !hitAll(pt).length)){
-    panning = { id: e.pointerId, x: pt.x, y: pt.y, px: vpx, py: vpy }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; return;
-  }
+  /* a second finger while drawing a box: two-finger pan/zoom of the view (nothing selected) or pinch the selection */
+  if (ptrs.size === 1 && rb){ rb = null; const first = [...ptrs.values()][0]; ptrs.set(e.pointerId, pt); cv.setPointerCapture(e.pointerId);
+    if (!curSelIdx().length){ pan2 = { a: first, b: pt, px: vpx, py: vpy, z: vz, d0: Math.hypot(pt.x - first.x, pt.y - first.y) || 1, c0: { x: (pt.x + first.x) / 2, y: (pt.y + first.y) / 2 } }; draw(); return; }
+    if (S.multi){ const ps = [...ptrs.values()]; gest = { group: [], pts: [ps[0]], pinch: { st: groupStates(), d0: Math.hypot(ps[1].x - ps[0].x, ps[1].y - ps[0].y) || 1, a0: Math.atan2(ps[1].y - ps[0].y, ps[1].x - ps[0].x), c0: { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 } } }; draw(); return; }
+    showBox = true; startGesture(); draw(); return; }
   if (!im.layers.length) return;
-  if (S.multi && ptrs.size){ /* second finger: pinch scales / rotates the whole group */
+  if (S.multi && ptrs.size){ /* second finger on the group: pinch scales / rotates the whole group */
     if (!gest || !gest.group || ptrs.size > 1) return;
     cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pt); tapInfo = null; const ps = [...ptrs.values()];
     gest.pinch = { st: groupStates(), d0: Math.hypot(ps[1].x - ps[0].x, ps[1].y - ps[0].y) || 1, a0: Math.atan2(ps[1].y - ps[0].y, ps[1].x - ps[0].x), c0: { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 } }; return; }
+  const add = e.shiftKey || e.ctrlKey || e.metaKey;
   if (!ptrs.size){
     const hits = hitAll(pt);
-    if (!hits.length){ /* empty spot: a tap clears the selection; two fingers still resize the selected one */
-      cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pt); tapEmpty = { id: e.pointerId, x: pt.x, y: pt.y }; gest = null; tapInfo = null; return; }
-    tapEmpty = null;
-    if (S.multi){
-      const ms = msOf(im), h = hits.find(i => ms.includes(i));
-      if (h === undefined){ ms.push(hits[0]); im.sel = hits[0]; tapInfo = null; } else { im.sel = h; tapInfo = { id: e.pointerId, x: pt.x, y: pt.y, toggle: h }; }
-      im.noSel = false; renderLayers(); syncAdj(); syncAlign();
-      cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pt); showBox = true;
-      gest = { group: ms.map(i => ({ i, cx: im.layers[i].cx, cy: im.layers[i].cy })), pts: [pt] }; draw(); return;
-    }
+    if (!hits.length){ /* empty spot: drag draws a selection box, a tap clears */
+      cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pt); rb = { id: e.pointerId, x0: pt.x, y0: pt.y, x: pt.x, y: pt.y, add, base: curSelIdx() }; gest = null; tapInfo = null; return; }
+    if (add){ const cur = curSelIdx(), h = hits[0], k = cur.indexOf(h); if (k >= 0) cur.splice(k, 1); else cur.push(h); setSel(cur); return; }
+    if (S.multi){ const ms = im.ms || [], h = hits.find(i => ms.includes(i));
+      if (h !== undefined){ /* drag the whole selection */
+        cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pt); showBox = true; tapInfo = { id: e.pointerId, x: pt.x, y: pt.y, single: h };
+        gest = { group: ms.map(i => ({ i, cx: im.layers[i].cx, cy: im.layers[i].cy })), pts: [pt] }; draw(); return; }
+      setSel([hits[0]]); }
     const was = !im.noSel && hits.includes(im.sel);
-    if (!was){ im.sel = hits[0]; im.noSel = false; renderLayers(); syncAdj(); }
+    if (!was){ im.sel = hits[0]; im.noSel = false; renderLayers(); syncAdj(); syncColorChip(); }
     tapInfo = { id: e.pointerId, x: pt.x, y: pt.y, hits, cycle: was && hits.length > 1 };
-    { const ti = tapInfo, prevSel = was ? null : (im.noSel ? null : im.sel);
-      clearTimeout(lpTimer); lpTimer = setTimeout(() => { /* long press: start picking several */
-        if (tapInfo !== ti || ti.moved || ptrs.size !== 1) return;
-        const keep = [hits[0]]; if (was && hits[0] !== im.sel) keep.unshift(im.sel);
-        setMulti(true); im.ms = Array.from(new Set(keep)); im.sel = hits[0]; im.noSel = false; tapInfo = null; gest = null; ptrs.clear(); showBox = false;
-        if (navigator.vibrate) try{ navigator.vibrate(12); }catch(_){}
-        renderLayers(); syncAdj(); syncAlign(); draw(); }, 480); }
-  } else { tapEmpty = null; tapInfo = null; }
+  } else { tapInfo = null; }
   cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pt); showBox = true; $("#hint").hidden = true; startGesture(); draw();
 });
 cv.addEventListener("pointermove", e => {
-  if (!ptrs.has(e.pointerId) || !gest) return;
+  if (!ptrs.has(e.pointerId)) return;
+  if (rb && rb.id === e.pointerId){ const pt = pos(e); rb.x = pt.x; rb.y = pt.y; ptrs.set(e.pointerId, pt); draw(); return; }
+  if (pan2){ ptrs.set(e.pointerId, pos(e)); const ps = [...ptrs.values()]; if (ps.length < 2) return; const d = Math.hypot(ps[1].x - ps[0].x, ps[1].y - ps[0].y), c = { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 };
+    const nz = clamp(pan2.z * d / pan2.d0, 1, 8); vz = nz; vpx = (pan2.px + c.x - pan2.c0.x) * 1; vpy = (pan2.py + c.y - pan2.c0.y); if (vz === 1){ vpx = vpy = 0; } syncZoom(); draw(); return; }
+  if (!gest) return;
   ptrs.set(e.pointerId, pos(e));
   const pts = [...ptrs.values()];
   if (tapInfo && Math.hypot(pts[0].x - tapInfo.x, pts[0].y - tapInfo.y) > 8){ tapInfo.moved = true; clearTimeout(lpTimer); }
@@ -1625,13 +1675,16 @@ cv.addEventListener("pointermove", e => {
 });
 function endPtr(e){ if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId);
   const im = curImg();
-  if (tapEmpty && tapEmpty.id === e.pointerId){ const pt = pos(e); if (Math.hypot(pt.x - tapEmpty.x, pt.y - tapEmpty.y) < 10 && im){ if (S.multi){ im.ms = []; syncAlign(); } else if (!im.noSel){ im.noSel = true; } renderLayers(); syncAdj(); } tapEmpty = null; }
+  if (pan2){ if (!ptrs.size) pan2 = null; return; }
+  if (rb && rb.id === e.pointerId){ const r = rb; rb = null;
+    if (Math.hypot(r.x - r.x0, r.y - r.y0) < 6){ if (!r.add) setSel([]); }
+    else { const hit = boxHits(r.x0, r.y0, r.x, r.y); setSel(r.add ? r.base.concat(hit) : hit); }
+    draw(); return; }
   if (tapInfo && tapInfo.id === e.pointerId && !tapInfo.moved && im){
-    if (S.multi && tapInfo.toggle !== undefined){ const ms = msOf(im); ms.splice(ms.indexOf(tapInfo.toggle), 1); if (ms.length) im.sel = ms[ms.length - 1]; renderLayers(); syncAdj(); syncAlign(); }
-    else if (tapInfo.cycle){ const k = tapInfo.hits.indexOf(im.sel); im.sel = tapInfo.hits[(k + 1) % tapInfo.hits.length]; renderLayers(); syncAdj(); }
+    if (S.multi && tapInfo.single !== undefined){ setSel([tapInfo.single]); }
+    else if (tapInfo.cycle){ const k = tapInfo.hits.indexOf(im.sel); im.sel = tapInfo.hits[(k + 1) % tapInfo.hits.length]; renderLayers(); syncAdj(); syncColorChip(); }
   }
   tapInfo = null; guides = [];
-  clearTimeout(lpTimer);
   if (ptrs.size){ if (!S.multi) startGesture(); else if (gest && gest.group){ const im2 = curImg(), rest = [...ptrs.values()][0]; gest = { group: (im2.ms || []).map(i => ({ i, cx: im2.layers[i].cx, cy: im2.layers[i].cy })), pts: [rest] }; } } else { gest = null; showBox = false; draw(); commit(); } }
 cv.addEventListener("pointerup", endPtr); cv.addEventListener("pointercancel", endPtr);
 cv.addEventListener("wheel", e => {
@@ -1651,7 +1704,7 @@ cv.addEventListener("keydown", e => {
   else if (e.key === "Tab" && im.layers.length > 1 && e.altKey){ im.sel = (im.sel + 1) % im.layers.length; }
   else if ((e.ctrlKey || e.metaKey) && (e.key === "d" || e.key === "D")){ e.preventDefault(); dupSel(); return; }
   else if (e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); $("#remove").click(); return; }
-  else if (e.key === "Escape"){ im.noSel = true; renderLayers(); syncAdj(); draw(); return; }
+  else if (e.key === "Escape"){ setSel([]); return; }
   else used = false;
   if (used){ e.preventDefault(); draw(); commit(); }
 });
@@ -1696,7 +1749,7 @@ function renderLayers(){
       x.onclick = (e) => { e.stopPropagation(); im.sel = i; removeSel(); };
       const d = document.createElement("span"); d.className = "lx ld"; d.setAttribute("role", "button"); d.setAttribute("aria-label", `${sig.name}を複製`); d.title = "複製"; d.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M5 15H4V4h11v1" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>';
       d.onclick = (e) => { e.stopPropagation(); im.sel = i; dupSel(); }; b.append(d, x); }
-    b.onclick = () => { if (S.multi){ const ms = msOf(im), k = ms.indexOf(i); if (k >= 0) ms.splice(k, 1); else ms.push(i); syncAlign(); } im.sel = i; im.noSel = false; renderLayers(); syncAdj(); draw(); };
+    b.onclick = (ev) => { if (S.multi || ev.shiftKey || ev.ctrlKey || ev.metaKey){ const cur = curSelIdx(), k = cur.indexOf(i); if (k >= 0) cur.splice(k, 1); else cur.push(i); setSel(cur); return; } setSel([i]); };
     el.append(b);
   });
   const add = document.createElement("button"); add.className = "layer add"; add.textContent = "＋ 追加"; add.setAttribute("aria-label", "署名やパーツを追加");
@@ -1714,7 +1767,7 @@ function renderLayers(){
   const db = document.createElement("button"); db.className = "layer undo ico"; db.title = "複製"; db.disabled = !curPlace() && !(S.multi && (im.ms || []).length);
   db.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M15.5 5.5V4.5h-11v11h1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14 11.5v5M11.5 14h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
   db.onclick = () => dupSel();
-  ub.append(u, r, db, mb, tb);
+  ub.append(u, r, db, tb);
 }
 function showStack(on){ S.stackNext = !!on; $("#stackBanner").hidden = !S.stackNext; $("#stackBanner2").hidden = !S.stackNext; }
 function startStack(){
@@ -1822,7 +1875,7 @@ function renderSwatches(){
   for (const [c, label] of SWATCHES){
     const b = document.createElement("button"); b.className = "sw"; b.style.setProperty("--c", c); b.setAttribute("aria-label", label); b.title = label;
     pressed(b, p && !p.grad && !p.orig && p.color.toLowerCase() === c);
-    b.onclick = () => { setFill(q => { q.color = c; q.grad = null; q.orig = false; }); $("#origColor").checked = false; commit(); };
+    b.onclick = () => { setFill(q => { q.color = c; q.grad = null; q.orig = false; }); $("#origColor").checked = false; pushRecent(c); commit(); };
     el.append(b);
   }
   const pick = document.createElement("label"); pick.className = "sw-pick"; pick.title = "好きな色";
@@ -1857,7 +1910,7 @@ $("#gA input").oninput = customGrad; $("#gB input").oninput = customGrad;
 $("#gA input").onchange = () => { commit(); }; $("#gB input").onchange = () => { commit(); };
 $("#sAng").oninput = (e) => { const v = +e.target.value; $("#oAng").textContent = v + "°"; setFill(q => { if (!q.grad) q.grad = { stops: [$("#gA input").value, $("#gB input").value], angle: v }; else q.grad.angle = v; q.orig = false; }); };
 $("#sAng").onchange = commit;
-function syncAdj(){
+function syncAdj(){ syncColorChip();
   const p = curPlace(), im = curImg();
   $("#toAdjRow").hidden = !(S.tab === "sig" && p);
   $("#adjEmpty").hidden = !!p; $("#adjBody").hidden = !p;
@@ -2143,6 +2196,48 @@ function setTab(t){
 for (const k of ["sig", "gen", "adj", "tpl", "exp"]) $("#t-" + k).onclick = () => setTab(k);
 
 
+
+/* ---------------------------------------------------------------- colour chip & popover */
+const BLENDS_UI = [["normal", "通常"], ["multiply", "乗算"], ["screen", "スクリーン"], ["overlay", "オーバーレイ"], ["soft-light", "ソフトライト"], ["color-dodge", "覆い焼き"], ["color-burn", "焼き込み"], ["lighter", "加算"]];
+let RECENT = (() => { const v = ls.get("ps.recent", []); return Array.isArray(v) ? v.slice(0, 3) : []; })();
+function pushRecent(hex){ if (!/^#[0-9a-f]{6}$/i.test(hex || "")) return; hex = hex.toLowerCase(); RECENT = [hex].concat(RECENT.filter(c => c !== hex)).slice(0, 3); ls.set("ps.recent", RECENT); }
+function useColor(hex){ if (!targets().length){ toast("先に署名を選んでください"); return; } setFill(q => { q.color = hex; q.grad = null; q.orig = false; }); const oc = document.getElementById("origColor"); if (oc) oc.checked = false; pushRecent(hex); commit(); renderSwatches(); syncColorChip(); }
+function syncColorChip(){
+  const chip = document.getElementById("cChip"); if (!chip) return;
+  const p = curPlace(), pop = document.getElementById("cPop");
+  chip.disabled = !p;
+  const css = !p ? "transparent" : p.orig ? "conic-gradient(#e47fae,#9a7fe0,#5fa6e3,#e47fae)" : p.grad ? gradCss(p.grad) : p.color;
+  document.getElementById("cChipSw").style.setProperty("--cc", css);
+  document.getElementById("cChipHex").textContent = !p ? "カラー" : p.grad ? "グラデ" : p.orig ? "元の色" : p.color.toUpperCase();
+  if (!p){ if (pop && !pop.hidden){ pop.hidden = true; chip.setAttribute("aria-expanded", "false"); } return; }
+  if (!pop || pop.hidden) return;
+  document.getElementById("cpCur").style.setProperty("--cc", css);
+  document.getElementById("cpHex").textContent = p.grad ? "グラデーション" : p.orig ? "元の色のまま" : p.color.toUpperCase();
+  const rc = document.getElementById("cpRecent"); rc.textContent = "";
+  document.getElementById("cpRecentRow").hidden = !RECENT.length;
+  for (const c of RECENT){ const b = document.createElement("button"); b.style.setProperty("--c", c); b.title = c; b.setAttribute("aria-label", "最近使った色 " + c); b.setAttribute("aria-pressed", !p.grad && !p.orig && p.color.toLowerCase() === c); b.onclick = () => useColor(c); rc.append(b); }
+  document.querySelectorAll("#cpGrid button").forEach(b => b.setAttribute("aria-pressed", !p.grad && !p.orig && p.color.toLowerCase() === b.dataset.c));
+  const pk = document.getElementById("cpPick"); if (/^#[0-9a-f]{6}$/i.test(p.color)) pk.value = p.color;
+  document.getElementById("cpOp").value = Math.round(p.op * 100); document.getElementById("cpOpO").textContent = Math.round(p.op * 100) + "%";
+  document.querySelectorAll("#cpBlend button").forEach(b => b.setAttribute("aria-pressed", (p.blend || "normal") === b.dataset.v));
+}
+{
+  const chip = $("#cChip"), pop = $("#cPop");
+  const open = (on) => { pop.hidden = !on; chip.setAttribute("aria-expanded", String(on)); if (on) syncColorChip(); };
+  chip.onclick = (e) => { e.stopPropagation(); open(pop.hidden); };
+  document.addEventListener("pointerdown", (e) => { if (!pop.hidden && !e.target.closest("#cPop") && !e.target.closest("#cChip")) open(false); }, true);
+  const g = $("#cpGrid"); for (const [c, label] of SWATCHES){ const b = document.createElement("button"); b.dataset.c = c.toLowerCase(); b.style.setProperty("--c", c); b.title = label; b.setAttribute("aria-label", label); b.onclick = () => useColor(c.toLowerCase()); g.append(b); }
+  $("#cpPick").oninput = (e) => { if (!targets().length) return; setFill(q => { q.color = e.target.value; q.grad = null; q.orig = false; }); syncColorChip(); };
+  $("#cpPick").onchange = (e) => { pushRecent(e.target.value); commit(); renderSwatches(); syncColorChip(); };
+  $("#cpDrop").onclick = () => { if (!curPlace()) return; open(false); S.pick = true; cv.style.cursor = "crosshair"; toast("絵をタップすると、その色を使います"); };
+  $("#cpOp").oninput = (e) => { const v = +e.target.value; targets().forEach(q => q.op = v / 100); $("#cpOpO").textContent = v + "%"; draw(); };
+  $("#cpOp").onchange = () => { commit(); syncAdj(); };
+  const bl = $("#cpBlend"); for (const [v, l] of BLENDS_UI){ const b = document.createElement("button"); b.className = "chip"; b.dataset.v = v; b.textContent = l; b.onclick = () => { targets().forEach(q => q.blend = v); draw(); commit(); syncAdj(); }; bl.append(b); }
+  $("#cpMore").onclick = () => { open(false); setTab("adj"); if (window.openSheet && document.getElementById("dock").offsetParent) openSheet(true); };
+  PAL.mount($("#cpPal"), { storeKey: "ps.pal", onColor: (hex) => useColor(hex),
+    actions: [{ label: "グラデーションにする", fn: (cs) => { if (!targets().length) return; setFill(q => { q.grad = { stops: cs, angle: q.grad ? q.grad.angle : 0 }; q.orig = false; }); commit(); renderSwatches(); syncColorChip(); } }] });
+}
+window.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A") && !/input|textarea|select/i.test((document.activeElement || {}).tagName || "")){ const im = curImg(); if (!im || !im.layers.length) return; e.preventDefault(); setSel(im.layers.map((_, i) => i)); } });
 /* ---------------------------------------------------------------- blend modes */
 {
   const BL = [["normal", "通常"], ["multiply", "乗算"], ["screen", "スクリーン"], ["overlay", "オーバーレイ"], ["soft-light", "ソフトライト"], ["color-dodge", "覆い焼き"], ["color-burn", "焼き込み"], ["lighter", "加算"]];
@@ -2190,16 +2285,10 @@ const AL_ICONS = {
   dh: '<path d="M3 4v16M21 4v16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="6" y="8" width="3" height="8" rx="1" fill="currentColor"/><rect x="10.5" y="8" width="3" height="8" rx="1" fill="currentColor"/><rect x="15" y="8" width="3" height="8" rx="1" fill="currentColor"/>',
   dv: '<path d="M4 3h16M4 21h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="8" y="6" width="8" height="3" rx="1" fill="currentColor"/><rect x="8" y="10.5" width="8" height="3" rx="1" fill="currentColor"/><rect x="8" y="15" width="8" height="3" rx="1" fill="currentColor"/>' };
 const AL_LABELS = { l: "左揃え", ch: "左右の中央揃え", r: "右揃え", t: "上揃え", cv: "上下の中央揃え", b: "下揃え", dh: "左右に等間隔", dv: "上下に等間隔" };
-function setMulti(on){
-  const im = curImg(); S.multi = !!on && !!im;
-  if (im){ im.ms = S.multi ? (im.noSel ? [] : [im.sel]) : []; }
-  document.body.classList.toggle("multi", S.multi);
-  if (S.multi) toast("タップで選ぶ・外す／2本指でまとめて拡大");
-  renderLayers(); syncAlign(); draw();
-}
+function setMulti(on){ if (!on) setSel([]); }
 function syncAlign(){
   const bar = $("#alignBar"), im = curImg(); bar.hidden = !S.multi || !im; if (bar.hidden) return;
-  const n = (im.ms || []).length; $("#msCount").textContent = n ? `${n}つ選択中` : "タップして選んでください";
+  const n = (im.ms || []).length; $("#msCount").textContent = `${n}つ選択中`;
   bar.querySelectorAll("[data-al]").forEach(b => { const k = b.dataset.al; b.disabled = !n || ((k === "dh" || k === "dv") && n < 3); });
   if (n && im.noSel){ im.noSel = false; im.sel = im.ms[im.ms.length - 1]; } syncAdj();
 }
@@ -2223,7 +2312,7 @@ function alignOp(k){
   const c = document.createElement("button"); c.className = "wide"; c.dataset.al = "img"; c.textContent = "画像の真ん中へ"; c.onclick = () => alignOp("img"); el.append(c);
   for (const [lab, k, tip] of [["−", 1 / 1.1, "まとめて小さく"], ["＋", 1.1, "まとめて大きく"]]){ const b = document.createElement("button"); b.dataset.al = "sc"; b.textContent = lab; b.title = tip; b.setAttribute("aria-label", tip); b.style.fontSize = "18px";
     b.onclick = () => { if (!targets().length) return; groupXform(groupStates(), k, 0, 0, 0); draw(); commit(); }; el.append(b); }
-  $("#msAll").onclick = () => { const im = curImg(); if (!im) return; im.ms = im.layers.map((_, i) => i); renderLayers(); syncAlign(); draw(); };
+  $("#msAll").onclick = () => { const im = curImg(); if (!im) return; setSel(im.layers.map((_, i) => i)); };
   $("#msDone").onclick = () => setMulti(false);
 }
 /* ---------------------------------------------------------------- adjust: jump chips */
