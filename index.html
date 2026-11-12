@@ -270,6 +270,12 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
   .chips,.strip,.layers{overscroll-behavior-x:contain}
   input[type=text],input:not([type]),select,textarea{font-size:16px!important}
 }
+
+/* PC: rows of choices wrap instead of hiding off to the side; wide lists keep a thin scrollbar */
+@media (min-width:920px){
+  .chips,.pal-chips,.pal-tabs,.abar-btns,.jump{flex-wrap:wrap;overflow-x:visible}
+  .strip,.layers{scrollbar-width:thin}.strip::-webkit-scrollbar,.layers::-webkit-scrollbar{display:block;height:6px}
+}
 .namebox{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
 .chip-store{display:none!important}.credit{margin:18px 0 6px;text-align:center;font-size:11px;color:var(--muted);opacity:.8}.credit a{color:inherit}
 .linkbtn{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;font-size:11px;cursor:pointer;color:var(--muted)}
@@ -2511,5 +2517,11 @@ addSample(); renderCats(); renderTpls(); syncExp(); refreshAll();
 Store.init();
 window.__ys = S;
 })();
+
+/* mouse wheel scrolls the sideways lists */
+document.addEventListener("wheel", (e) => { if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+  const el = e.target.closest && e.target.closest(".strip,.layers,.imgs,.chips,.pal-chips,.scroll"); if (!el || el.scrollWidth <= el.clientWidth + 2) return;
+  const max = el.scrollWidth - el.clientWidth; if ((e.deltaY < 0 && el.scrollLeft <= 0) || (e.deltaY > 0 && el.scrollLeft >= max - 1)) return;
+  el.scrollLeft += e.deltaY; e.preventDefault(); }, { passive: false });
 </script>
 </body></html>
