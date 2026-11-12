@@ -191,6 +191,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
 .grip span{width:48px;height:5px;border-radius:3px;background:var(--line)}
 .grip:active span,.grip:focus-visible span{background:var(--accent)}
 .layer.undo + .layer.undo{margin-left:0}
+.lx.ld{background:var(--surface);color:var(--accent);border:1px solid var(--accent)}
 .lx{display:inline-grid;place-items:center;width:20px;height:20px;margin:0 -4px 0 2px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:13px;line-height:1}
 .layer.ico{width:40px;height:40px;padding:0;justify-content:center;border-radius:50%}.layer.ico svg{width:21px;height:21px}
 .layer[disabled]{opacity:.4;cursor:default}
@@ -960,38 +961,26 @@ return { make, batch, arrow, arrowBatch, ASHAPES, AHEADS, AENDS, ADIRS, THEMES, 
 const PAL = (() => {
 const GROUPS = [
   ["定番", [
+    ["パステル", ["#f4b8d8", "#b8e3d6", "#c5b8f0", "#fff1b8"]],
     ["クール", ["#1b2a4a", "#3a4f8a", "#7f5bc4", "#38c9e8"]],
     ["ゴシック", ["#1e1d24", "#3b2335", "#7a2a46", "#c9a24b"]],
-    ["パステル", ["#f4b8d8", "#b8e3d6", "#c5b8f0", "#fff1b8"]],
-    ["レトロポップ", ["#f3e2b5", "#f68b3a", "#2a8a8a", "#d9434f"]],
     ["ネオンナイト", ["#141a3a", "#ff3fbf", "#3fd0ff", "#c8ff3f"]],
     ["アンティーク", ["#e2cfb2", "#8a6a4a", "#6b4a35", "#b89a5a"]],
-    ["ボタニカル", ["#24624a", "#a9c98a", "#f3efd8", "#6b8f4a"]],
-    ["ベリーミックス", ["#5a2d6b", "#c9375a", "#f4b8c8", "#8a3a8a"]],
-    ["モノクロ", ["#111114", "#55575f", "#a9abb3", "#f2f2f4"]],
-    ["和モダン", ["#b33a3a", "#1f2a44", "#c9a24b", "#efe6d6"]]]],
+    ["ボタニカル", ["#24624a", "#a9c98a", "#f3efd8", "#6b8f4a"]]]],
   ["おすすめ", [
     ["ホロ", ["#ff9ad5", "#a3b8ff", "#8ff0d9", "#fff1a8"]],
-    ["シルバー", ["#6f7686", "#b8bdcb", "#e6e9f0", "#ffffff"]],
     ["ゆめかわ", ["#ffb3d9", "#c9b3ff", "#b3e5ff", "#fff0f8"]],
-    ["白昼夢", ["#e8d9f2", "#d5e8f0", "#f2e3d5", "#c7c9d9"]],
     ["地雷", ["#1b1b22", "#ff5fa2", "#ffd1e1", "#ffffff"]],
     ["深海", ["#0b1e3a", "#1f4e79", "#3fa7c9", "#bfe9f2"]],
     ["ゴールド", ["#8a6a24", "#c9a24b", "#f2d58a", "#fff6dc"]],
-    ["ガラス", ["#9fd8e8", "#c9e8f2", "#e9f6fa", "#a8b8e8"]],
-    ["夜の薔薇", ["#2a0f1e", "#6b1532", "#c23b5f", "#e8c9a8"]],
-    ["ミント", ["#2a8a7a", "#7fd1c7", "#d9f2ee", "#f6fbfa"]]]],
+    ["夜の薔薇", ["#2a0f1e", "#6b1532", "#c23b5f", "#e8c9a8"]]]],
   ["季節", [
     ["春", ["#f9c9d4", "#fde9a8", "#c8e6b8", "#b8d8f0"]],
     ["夏", ["#2fb3e0", "#ffd34d", "#28c7a0", "#ffffff"]],
     ["秋", ["#c4552e", "#e09b3d", "#7a4a2a", "#f2dcb3"]],
     ["冬", ["#3d5a80", "#9fb4d0", "#e8eef6", "#ffffff"]],
-    ["桜", ["#ffd1e1", "#ff8fb3", "#c95a7a", "#fff0f5"]],
-    ["七夕", ["#1b2a6b", "#5d6ad9", "#f2d07a", "#c7b8ff"]],
-    ["ハロウィン", ["#1b1b22", "#f28c28", "#7a3fa0", "#f2e6c8"]],
-    ["クリスマス", ["#b3262e", "#1f6b4a", "#f2d07a", "#ffffff"]],
-    ["バレンタイン", ["#5a3a2a", "#7a2a3a", "#e85a8a", "#f6c9d6"]],
-    ["お正月", ["#c8102e", "#f2d07a", "#1b1b22", "#fff8ee"]]]]
+    ["星空", ["#1b2a6b", "#5d6ad9", "#f2d07a", "#c7b8ff"]],
+    ["夕暮れ", ["#3b2d5c", "#c4577a", "#f29a6b", "#fbd9a8"]]]]
 ];
 const CATS = [["all", "すべて"], ["cool", "寒色"], ["warm", "暖色"], ["neutral", "中性色"], ["mono", "無彩色"]];
 const MOODS = [["all", "すべて"], ["pastel", "パステル"], ["neon", "ネオン"], ["dull", "くすみ"], ["deep", "深色"], ["vivid", "鮮やか"], ["natural", "ナチュラル"], ["retro", "レトロ"]];
@@ -1027,12 +1016,21 @@ function css(){ if (cssDone) return; cssDone = true; const s = document.createEl
 .pal-act button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--fg)}
 .pal-act button.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink,#fff)}
 .pal-gopt{display:grid;gap:5px}.pal-gopt>span{font-size:11.5px;color:var(--muted)}
-.pal-note{font-size:11.5px;color:var(--muted);margin:0}`; document.head.append(s); }
+.pal-note{font-size:11.5px;color:var(--muted);margin:0}
+.pal-warn{color:var(--danger,#c23b4a)}.pal-warn:empty{display:none}
+.pal-hd{display:flex;align-items:center;gap:4px}.pal-hd .nm{flex:1;min-width:0}
+.pal-ctl{display:flex;gap:2px;flex:none}
+.pal-ctl button{width:24px;height:24px;border:0;background:none;border-radius:50%;display:grid;place-items:center;padding:0;color:var(--muted);font-size:15px;line-height:1}
+.pal-ctl .lk svg{width:15px;height:15px}.pal-ctl .lk[aria-pressed="true"]{color:#e0607f}
+.pal-ctl .keep{width:auto!important;height:26px!important;padding:0 10px!important;font-size:12px;border-radius:999px!important;border:1px solid var(--line,#ddd)!important;color:#d0607f!important}
+.pal-ctl .x{width:20px!important;height:20px!important;font-size:12px!important;border-radius:50%!important;background:rgba(20,22,32,.62)!important;color:#fff!important;border:0!important}
+.pal-ctl button:hover{background:var(--sunk,rgba(0,0,0,.05))}`; document.head.append(s); }
 /* opts: { onColor(hex), actions: [{label, fn(colors, name)}], storeKey } */
 function mount(el, opts){
   css(); const st = (() => { try{ return JSON.parse(localStorage.getItem(opts.storeKey || "pal.st")) || {}; }catch(e){ return {}; } })();
-  const S = Object.assign({ tab: 0, cat: "all", mood: "all", harm: "auto", made: [] }, st); let cur = null;
-  const save = () => { try{ localStorage.setItem(opts.storeKey || "pal.st", JSON.stringify({ tab: S.tab, cat: S.cat, mood: S.mood, harm: S.harm, made: S.made.slice(0, 12) })); }catch(e){} };
+  const S = Object.assign({ tab: 0, cat: "all", mood: "all", harm: "auto", made: [], fav: [] }, st); let cur = null;
+  const HMAX = 1, FMAX = 6; S.made = (S.made || []).slice(0, HMAX); S.fav = (S.fav || []).slice(0, FMAX);
+  const save = () => { try{ localStorage.setItem(opts.storeKey || "pal.st", JSON.stringify({ tab: S.tab, cat: S.cat, mood: S.mood, harm: S.harm, made: S.made.slice(0, HMAX), fav: S.fav.slice(0, FMAX) })); }catch(e){} };
   el.textContent = ""; el.classList.add("pal-wrap");
   const tabs = document.createElement("div"); tabs.className = "pal-tabs";
   const body = document.createElement("div"); body.style.display = "grid"; body.style.gap = "10px";
@@ -1041,13 +1039,19 @@ function mount(el, opts){
   el.append(tabs, note, body, act);
   const names = GROUPS.map(g => g[0]).concat(["ガチャ"]);
   function renderTabs(){ tabs.textContent = ""; names.forEach((n, i) => { const b = document.createElement("button"); b.textContent = n; b.setAttribute("aria-pressed", S.tab === i); b.onclick = () => { S.tab = i; save(); renderTabs(); renderBody(); }; tabs.append(b); }); }
-  function row(name, colors, sub){
+  function row(name, colors, sub, ctl){
     const r = document.createElement("div"); r.className = "pal-row"; r.setAttribute("aria-current", !!(cur && cur[1].join() === colors.join()));
     const nm = document.createElement("button"); nm.className = "nm"; nm.textContent = name; if (sub){ const s = document.createElement("span"); s.textContent = sub; nm.append(s); }
     nm.onclick = () => { cur = [name, colors]; renderBody(); renderAct(); };
+    if (ctl){ const h = document.createElement("div"); h.className = "pal-hd"; const c = document.createElement("div"); c.className = "pal-ctl";
+      const lk = document.createElement("button"); lk.className = "lk"; lk.setAttribute("aria-pressed", !!ctl.locked); lk.title = ctl.locked ? "お気に入りから外す" : "お気に入りに残す";
+      lk.innerHTML = ctl.locked ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.7a4.3 4.3 0 0 1 7.5 2.8c0 5.4-7.5 10-7.5 10Z" fill="currentColor"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.7a4.3 4.3 0 0 1 7.5 2.8c0 5.4-7.5 10-7.5 10Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+      lk.onclick = ctl.onLock; const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "消す"; x.setAttribute("aria-label", `${name}を消す`); x.onclick = ctl.onDel;
+      if (ctl.locked) c.append(x); else { lk.className = "keep"; lk.innerHTML = "♡ 残す"; lk.title = "お気に入りに残す"; c.append(lk); }
+      h.append(nm, c); r.append(h); } else r.append(nm);
     const sw = document.createElement("div"); sw.className = "pal-sw";
     colors.forEach(c => { const b = document.createElement("button"); b.style.background = c; b.title = c; b.setAttribute("aria-label", `${name}の ${c}`); b.onclick = () => opts.onColor && opts.onColor(c); sw.append(b); });
-    r.append(nm, sw); return r;
+    r.append(sw); return r;
   }
   function chips(list, key){ const w = document.createElement("div"); w.className = "pal-chips"; list.forEach(([k, l]) => { const b = document.createElement("button"); b.textContent = l; b.setAttribute("aria-pressed", S[key] === k); b.onclick = () => { S[key] = k; save(); renderBody(); }; w.append(b); }); return w; }
   function opt(label, node){ const d = document.createElement("div"); d.className = "pal-gopt"; const s = document.createElement("span"); s.textContent = label; d.append(s, node); return d; }
@@ -1056,11 +1060,19 @@ function mount(el, opts){
     if (S.tab < GROUPS.length){ const list = document.createElement("div"); list.className = "pal-list"; GROUPS[S.tab][1].forEach(([n, c]) => list.append(row(n, c))); body.append(list); return; }
     body.append(opt("色系統", chips(CATS, "cat")), opt("色の雰囲気", chips(MOODS, "mood")), opt("配色の組み立て", chips(HARMS, "harm")));
     const go = document.createElement("div"); go.className = "pal-act"; const b = document.createElement("button"); b.className = "pri"; b.textContent = "この条件でランダム配色";
-    b.onclick = () => { const p = gen(S); S.made.unshift(p); S.made = S.made.slice(0, 12); cur = p; save(); renderBody(); renderAct(); }; go.append(b); body.append(go);
-    if (S.made.length){ const list = document.createElement("div"); list.className = "pal-list"; S.made.forEach(([n, c], i) => list.append(row(n, c, i === 0 ? "最新" : ""))); body.append(list); }
+    b.onclick = () => { const p = gen(S); S.made.unshift(p); S.made = S.made.slice(0, HMAX); cur = p; save(); renderBody(); renderAct(); }; go.append(b); body.append(go);
+    const same = (a, b2) => a[1].join() === b2[1].join();
+    if (S.fav.length){ const h = document.createElement("p"); h.className = "pal-note"; h.textContent = `お気に入り（${S.fav.length}/${FMAX}）・×で外せます`; const list = document.createElement("div"); list.className = "pal-list";
+      S.fav.forEach((p, i) => list.append(row(p[0], p[1], "", { locked: true, onLock: () => { S.fav.splice(i, 1); save(); renderBody(); }, onDel: () => { S.fav.splice(i, 1); if (cur && same(cur, p)) cur = null; save(); renderBody(); renderAct(); } }))); body.append(h, list); }
+    if (S.made.length){ const h = document.createElement("p"); h.className = "pal-note"; h.textContent = "今回の配色（もう一度押すと入れ替わります）"; const list = document.createElement("div"); list.className = "pal-list";
+      S.made.forEach((p, i) => list.append(row(p[0], p[1], "", { locked: false,
+        onLock: () => { if (S.fav.length >= FMAX){ alertNote(`お気に入りは${FMAX}つまでです。×でどれかを外してください`); return; } S.fav.push(p); S.made.splice(i, 1); save(); renderBody(); },
+        onDel: () => { S.made.splice(i, 1); if (cur && same(cur, p)) cur = null; save(); renderBody(); renderAct(); } }))); body.append(h, list); }
+    const an = document.createElement("p"); an.className = "pal-note pal-warn"; an.id = "palWarn"; body.append(an);
   }
   function renderAct(){ act.textContent = ""; if (!cur) return; const lab = document.createElement("span"); lab.className = "pal-note"; lab.textContent = `「${cur[0]}」を：`; act.append(lab);
     (opts.actions || []).forEach(a => { const b = document.createElement("button"); b.textContent = a.label; b.onclick = () => a.fn(cur[1].slice(), cur[0]); act.append(b); }); }
+  function alertNote(m){ const w = body.querySelector(".pal-warn"); if (w){ w.textContent = m; clearTimeout(alertNote.t); alertNote.t = setTimeout(() => { w.textContent = ""; }, 3500); } }
   renderTabs(); renderBody();
 }
 return { mount, gen, GROUPS };
@@ -1594,6 +1606,7 @@ cv.addEventListener("keydown", e => {
   else if (e.key === "+" || e.key === "=") p.w = clamp(p.w * 1.04, .02, 2.5); else if (e.key === "-") p.w = clamp(p.w / 1.04, .02, 2.5);
   else if (e.key === "[") p.rot = norm(p.rot - 1); else if (e.key === "]") p.rot = norm(p.rot + 1);
   else if (e.key === "Tab" && im.layers.length > 1 && e.altKey){ im.sel = (im.sel + 1) % im.layers.length; }
+  else if ((e.ctrlKey || e.metaKey) && (e.key === "d" || e.key === "D")){ e.preventDefault(); dupSel(); return; }
   else if (e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); $("#remove").click(); return; }
   else if (e.key === "Escape"){ im.noSel = true; renderLayers(); syncAdj(); draw(); return; }
   else used = false;
@@ -1637,7 +1650,9 @@ function renderLayers(){
     const t = document.createElement("span"); t.textContent = sig.name;
     b.append(ic, t);
     if (!S.multi && i === im.sel && !im.noSel){ const x = document.createElement("span"); x.className = "lx"; x.setAttribute("role", "button"); x.setAttribute("aria-label", `${sig.name}を外す`); x.textContent = "×";
-      x.onclick = (e) => { e.stopPropagation(); im.sel = i; removeSel(); }; b.append(x); }
+      x.onclick = (e) => { e.stopPropagation(); im.sel = i; removeSel(); };
+      const d = document.createElement("span"); d.className = "lx ld"; d.setAttribute("role", "button"); d.setAttribute("aria-label", `${sig.name}を複製`); d.title = "複製"; d.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M5 15H4V4h11v1" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>';
+      d.onclick = (e) => { e.stopPropagation(); im.sel = i; dupSel(); }; b.append(d, x); }
     b.onclick = () => { if (S.multi){ const ms = msOf(im), k = ms.indexOf(i); if (k >= 0) ms.splice(k, 1); else ms.push(i); syncAlign(); } im.sel = i; im.noSel = false; renderLayers(); syncAdj(); draw(); };
     el.append(b);
   });
@@ -1653,7 +1668,10 @@ function renderLayers(){
   const tb = document.createElement("button"); tb.className = "layer undo ico"; tb.title = "署名をまとめて消す"; tb.setAttribute("aria-haspopup", "true"); tb.disabled = !S.images.some(x => x.layers.length);
   tb.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   tb.onclick = (e) => { e.stopPropagation(); const m = $("#clearMenu"); m.hidden = !m.hidden; };
-  ub.append(u, r, mb, tb);
+  const db = document.createElement("button"); db.className = "layer undo ico"; db.title = "複製"; db.disabled = !curPlace() && !(S.multi && (im.ms || []).length);
+  db.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M15.5 5.5V4.5h-11v11h1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14 11.5v5M11.5 14h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+  db.onclick = () => dupSel();
+  ub.append(u, r, db, mb, tb);
 }
 function showStack(on){ S.stackNext = !!on; $("#stackBanner").hidden = !S.stackNext; $("#stackBanner2").hidden = !S.stackNext; }
 function startStack(){
@@ -1862,7 +1880,14 @@ $("#suggest").onclick = () => {
 function moveLayer(d){ const im = curImg(); if (!curPlace()) return; const i = im.sel, j = i + d; if (j < 0 || j >= im.layers.length) return; [im.layers[i], im.layers[j]] = [im.layers[j], im.layers[i]]; im.sel = j; draw(); commit(); }
 $("#lyBack").onclick = () => moveLayer(-1);
 $("#lyFront").onclick = () => moveLayer(1);
-$("#lyDup").onclick = () => { const im = curImg(), p = curPlace(); if (!p) return; const q = clone(p); q.cx = clamp(q.cx + .03, 0, 1); q.cy = clamp(q.cy + .03, 0, 1); im.layers.splice(im.sel + 1, 0, q); im.sel++; im.noSel = false; draw(); commit(); toast("複製しました"); };
+function dupSel(){
+  const im = curImg(); if (!im) return; const idx = (S.multi && im.ms && im.ms.length) ? im.ms.slice().sort((a, b) => a - b) : (curPlace() ? [im.sel] : []); if (!idx.length) return;
+  const copies = idx.map(i => { const q = clone(im.layers[i]); q.cx = clamp(q.cx + .04, -.3, 1.3); q.cy = clamp(q.cy + .04, -.3, 1.3); return q; });
+  const start = im.layers.length; im.layers.push(...copies);
+  if (S.multi){ im.ms = copies.map((_, k) => start + k); im.sel = im.ms[im.ms.length - 1]; } else { im.sel = start; im.noSel = false; }
+  draw(); commit(); refreshAll(); syncAlign(); toast(copies.length > 1 ? `${copies.length}つ複製しました` : "複製しました（少しずらして置きました）");
+}
+$("#lyDup").onclick = () => dupSel(); const _oldDup = () => { const im = curImg(), p = curPlace(); if (!p) return; const q = clone(p); q.cx = clamp(q.cx + .03, 0, 1); q.cy = clamp(q.cy + .03, 0, 1); im.layers.splice(im.sel + 1, 0, q); im.sel++; im.noSel = false; draw(); commit(); toast("複製しました"); };
 $("#lyAdd").onclick = () => startStack();
 $("#sJit").value = S.jit; $("#oJit").textContent = S.jit + "%";
 $("#sJit").oninput = (e) => { S.jit = +e.target.value; $("#oJit").textContent = S.jit + "%"; ls.set("ps.jit", S.jit); };
