@@ -93,7 +93,7 @@ body.multi .badge{display:none}
 .cp-tools{display:flex;gap:6px}.cp-ic{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:15px;position:relative;overflow:hidden;cursor:pointer}
 .cp-ic input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .cp-row{display:flex;align-items:center;gap:10px}.cp-lab{font-size:12px;color:var(--muted)}
-.cp-recent{display:flex;gap:8px}.cp-recent button,.cp-grid button{width:28px;height:28px;border-radius:50%;border:1px solid rgba(0,0,0,.12);padding:0;background:var(--c)}
+#cpRecentRow{display:grid;gap:8px}.cp-recent button,.cp-grid button{width:28px;height:28px;border-radius:50%;border:1px solid rgba(0,0,0,.12);padding:0;background:var(--c)}
 .cp-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;justify-items:center}
 .cp-grid button[aria-pressed="true"],.cp-recent button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
 .cp-pal summary{font-size:13px;cursor:pointer;padding:4px 0}
@@ -328,7 +328,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
       <div class="cpop" id="cPop" hidden>
         <div class="cp-top"><i class="cp-cur" id="cpCur"></i><div class="cp-meta"><b>いまの色</b><span id="cpHex"></span></div>
           <div class="cp-tools"><button class="cp-ic" id="cpDrop" title="スポイト：絵から色を拾う" aria-label="スポイト">💧</button><label class="cp-ic" title="好きな色を選ぶ"><span>＋</span><input type="color" id="cpPick" aria-label="好きな色を選ぶ"></label></div></div>
-        <div class="cp-row" id="cpRecentRow"><span class="cp-lab">最近の3色</span><div class="cp-recent" id="cpRecent"></div></div>
+        <div id="cpRecentRow"><div class="cp-lab">最近使った色</div><div class="cp-grid cp-recent" id="cpRecent"></div></div>
         <div class="cp-lab">色見本</div>
         <div class="cp-grid" id="cpGrid"></div>
         <details class="cp-pal"><summary>パレットから選ぶ</summary><div id="cpPal"></div></details>
@@ -1186,12 +1186,12 @@ function nameArrows(name, cs){
     tri: ["三角格子", (W, H) => { let d = ""; const s = 30, h = s * .866; for (let y = 0; y <= H; y += h) d += `M0 ${y.toFixed(1)}H${W}`; for (let k = -H * 2; k < W + H; k += s){ d += `M${k} 0L${(k + H / .866 / 2 * 1).toFixed(1)} ${H}`; d += `M${k} ${H}L${(k + H / .866 / 2).toFixed(1)} 0`; } return L(d, 1.6); }],
     chevron: ["山形", (W, H) => { let d = ""; for (let y = 12; y < H + 10; y += 22){ d += `M0 ${y}`; for (let x = 0; x <= W; x += 16) d += `L${x} ${y + ((x / 16) % 2 ? -7 : 7)}`; } return L(d, 2.2); }],
     mesh: ["メッシュ", (W, H) => { let d = ""; for (let x = 6; x < W; x += 12) d += `M${x} 0V${H}`; for (let y = 6; y < H; y += 12) d += `M0 ${y}H${W}`; return L(d, 1.1); }],
-    lace: ["レース", (W, H) => { let s = "", d = ""; for (let y = 6; y < H; y += 34){ for (let x = 0; x < W; x += 28){ d += `M${x} ${y}a14 14 0 0 0 28 0`; s += `<circle cx="${x + 14}" cy="${y + 8}" r="2.6" fill="#000"/><circle cx="${x + 14}" cy="${y + 18}" r="1.6" fill="#000"/>`; } } return L(d, 1.8) + s; }]
+    lace: ["レース", (W, H) => { let s = "", d = ""; for (let y = 6; y < H; y += 34){ for (let x = 0; x < W; x += 28){ d += `M${x} ${y}a14 14 0 0 0 28 0`; } } return L(d, 1.8) + s; }]
   };
   const fade = (W, H, id, fx, fy) => `<defs><linearGradient id="${id}x" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="${fx}" stop-color="#fff"/><stop offset="${1 - fx}" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <linearGradient id="${id}y" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="${fy}" stop-color="#fff"/><stop offset="${1 - fy}" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <mask id="${id}mx" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#${id}x)"/></mask><mask id="${id}my" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#${id}y)"/></mask></defs>`;
-  const make = (k, W, H, fx, fy, suf) => { const id = "d" + k + suf; return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">${fade(W, H, id, fx, fy)}<g mask="url(#${id}mx)"><g mask="url(#${id}my)">${PAT[k][1](W, H)}</g></g></svg>`; };
+  const make = (k, W, H) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="c${k}${W}"><rect width="${W}" height="${H}"/></clipPath></defs><g clip-path="url(#c${k}${W})">${PAT[k][1](W, H)}</g></svg>`;
   const out = [];
   for (const k of Object.keys(PAT)){
     out.push({ id: "dc_" + k + "_b", name: PAT[k][0] + "（帯）", cat: "parts", genre: "装飾", decor: "band", svg: make(k, 600, 110, .2, .18, "b") });
@@ -2199,8 +2199,8 @@ for (const k of ["sig", "gen", "adj", "tpl", "exp"]) $("#t-" + k).onclick = () =
 
 /* ---------------------------------------------------------------- colour chip & popover */
 const BLENDS_UI = [["normal", "通常"], ["multiply", "乗算"], ["screen", "スクリーン"], ["overlay", "オーバーレイ"], ["soft-light", "ソフトライト"], ["color-dodge", "覆い焼き"], ["color-burn", "焼き込み"], ["lighter", "加算"]];
-let RECENT = (() => { const v = ls.get("ps.recent", []); return Array.isArray(v) ? v.slice(0, 3) : []; })();
-function pushRecent(hex){ if (!/^#[0-9a-f]{6}$/i.test(hex || "")) return; hex = hex.toLowerCase(); RECENT = [hex].concat(RECENT.filter(c => c !== hex)).slice(0, 3); ls.set("ps.recent", RECENT); }
+let RECENT = (() => { const v = ls.get("ps.recent", []); return Array.isArray(v) ? v.slice(0, 6) : []; })();
+function pushRecent(hex){ if (!/^#[0-9a-f]{6}$/i.test(hex || "")) return; hex = hex.toLowerCase(); RECENT = [hex].concat(RECENT.filter(c => c !== hex)).slice(0, 6); ls.set("ps.recent", RECENT); }
 function useColor(hex){ if (!targets().length){ toast("先に署名を選んでください"); return; } setFill(q => { q.color = hex; q.grad = null; q.orig = false; }); const oc = document.getElementById("origColor"); if (oc) oc.checked = false; pushRecent(hex); commit(); renderSwatches(); syncColorChip(); }
 function syncColorChip(){
   const chip = document.getElementById("cChip"); if (!chip) return;
