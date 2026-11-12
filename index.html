@@ -178,8 +178,10 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
 .coach.hide{opacity:0;transform:translate(-50%,8px);pointer-events:none}
 .coach b{font-weight:600}
 @media (min-width:920px){.coach{bottom:32px;left:calc(50% - 210px)}}
-.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;
-  background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;max-width:calc(100% - 32px);text-align:center}
+.toast{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:40;pointer-events:none;
+  background:color-mix(in srgb,var(--fg) 82%,transparent);color:var(--bg);padding:5px 12px;border-radius:999px;font-size:12px;max-width:calc(100% - 24px);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:0 4px 14px rgba(10,12,20,.18);animation:toastIn .2s ease-out}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-6px)}to{opacity:1;transform:translate(-50%,0)}}
 
 .layers{display:flex;gap:6px;overflow-x:auto;align-items:center;padding-bottom:2px;min-height:30px}
 .layer{flex:0 0 auto;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px 4px 7px;font-size:12px}
@@ -261,7 +263,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
   .dock .ti{display:block;width:23px;height:23px}
   .dock .tabs button[aria-selected="true"]{color:var(--muted);border:0}
   body.sheet .dock .tabs button[aria-selected="true"]{color:var(--accent)}
-  .toast{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+
   body.typing .stage-col,body.typing .dock{display:none}
   body.typing .panel{flex:1 1 auto}
   body.typing{bottom:auto;height:var(--vvh,100%)}
@@ -954,7 +956,7 @@ function batch(o, n){
   }
   return out;
 }
-return { make, batch, arrow, arrowBatch, ASHAPES, AHEADS, AENDS, ADIRS, THEMES, ENCS, SHAPES, glyphsOK: (t) => [...norm(t)].filter(c => c.trim()).every(c => G[c] || G[c.toUpperCase()]), norm };
+return { G, make, batch, arrow, arrowBatch, ASHAPES, AHEADS, AENDS, ADIRS, THEMES, ENCS, SHAPES, glyphsOK: (t) => [...norm(t)].filter(c => c.trim()).every(c => G[c] || G[c.toUpperCase()]), norm };
 })();
 
 /* Shared palette presets + palette gacha UI . */
@@ -1126,6 +1128,28 @@ function nameArrows(name, cs){
   return out;
 }
 
+/* SNS / web helpers: generic icons plus service names written in the original lettering (no brand logos). */
+(() => {
+  const S = 'fill="none" stroke="#000" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"';
+  const svg = (vb, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`;
+  /* text in the original glyphs: 60x80 cells (descenders to 100) */
+  const word = (txt, sw) => { let x = 0, out = ""; for (const ch of txt){ if (ch === " "){ x += 40; continue; } const g = SG.G[ch] || SG.G[ch.toUpperCase()]; if (!g){ x += 40; continue; }
+      for (const pl of g) out += `<polyline points="${pl.map(([a, b]) => `${a + x},${b}`).join(" ")}" fill="none" stroke="#000" stroke-width="${sw || 5}" stroke-linecap="round" stroke-linejoin="round"/>`; x += 76; }
+    return { out, w: x - 16 }; };
+  const label = (id, name, txt) => { const w = word(txt, 5.5); return { id, name, cat: "parts", genre: "SNS", svg: svg(`-14 -14 ${w.w + 28} 128`, w.out) }; };
+  const at = word("@", 6);
+  const L = [
+    { id: "sn_at", name: "@マーク", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<circle cx="50" cy="50" r="44" ${S}/><g transform="translate(30 24) scale(.66)">${at.out}</g>`) },
+    { id: "sn_link", name: "リンク", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<path d="M44 58L58 44" ${S}/><path d="M40 46L28 58A13 13 0 0 0 46 76L56 66" ${S}/><path d="M60 54L72 42A13 13 0 0 0 54 24L44 34" ${S}/>`) },
+    { id: "sn_mail", name: "メール", cat: "parts", genre: "SNS", svg: svg("0 0 120 90", `<rect x="10" y="12" width="100" height="66" rx="8" ${S}/><path d="M12 16L60 52L108 16" ${S}/>`) },
+    { id: "sn_globe", name: "ウェブ", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<circle cx="50" cy="50" r="40" ${S}/><ellipse cx="50" cy="50" rx="17" ry="40" ${S}/><path d="M12 38H88M12 62H88" ${S}/>`) },
+    { id: "sn_cam", name: "カメラ", cat: "parts", genre: "SNS", svg: svg("0 0 120 100", `<path d="M14 32H36L44 20H76L84 32H106V84H14Z" ${S}/><circle cx="60" cy="57" r="17" ${S}/><circle cx="94" cy="44" r="2.5" fill="#000"/>`) },
+    { id: "sn_brush", name: "ペン", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<path d="M66 16L84 34L40 78L18 84L24 62Z" ${S}/><path d="M58 24L76 42M24 62L40 78" ${S}/>`) },
+    { id: "sn_user", name: "ひと", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<circle cx="50" cy="36" r="16" ${S}/><path d="M18 86C20 66 34 58 50 58S80 66 82 86" ${S}/>`) }
+  ];
+  PARTS.unshift(...L);
+})();
+
 /* Built-in designs for the public edition: regenerated from the user's own name. */
 const PUB_RECIPES = [
   { id: "p_hair", name: "ヘアライン", enc: "glyph", shape: "line", theme: "minimal", seed: 3, genre: "透明感" },
@@ -1168,7 +1192,7 @@ function makeBuiltins(name, cs){
   for (const r of PUB_RECIPES){
     let g = null; try{ g = SG.make({ text: name, cs: cs || "asis", enc: r.enc, shape: r.shape, theme: r.theme, seed: r.seed }); }catch(e){}
     if (!g) continue;
-    out.push({ id: r.id, name: r.name, cat: SYM_SHAPES[r.shape] ? "sym" : (CAT_OF[g.place] || "line"), place: g.place, genre: r.genre, svg: g.svg, anchor: g.anchor || undefined });
+    out.push({ id: r.id, name: r.name, cat: SYM_SHAPES[r.shape] ? "sym" : (CAT_OF[g.place] || "line"), place: g.place, genre: r.genre, read: (g.enc || r.enc) === "glyph" ? "読める" : "読めない", svg: g.svg, anchor: g.anchor || undefined });
   }
   return out.concat(nameArrows(name, cs || "asis"));
 }
@@ -1185,7 +1209,7 @@ const ls = { get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 /* ---------------------------------------------------------------- data */
-const CATS = [["all","すべて"],["line","横ライン"],["vert","縦ライン"],["corner","角"],["round","放射・円"],["sym","記号"],["gothic","ゴシック"],["arrow","矢印"],["parts","パーツ"],["custom","自分の署名"]];
+const CATS = [["all","すべて"],["line","横ライン"],["vert","縦ライン"],["corner","角"],["round","放射・円"],["sym","記号"],["arrow","矢印"],["parts","パーツ"],["sns","SNS"],["custom","自分の署名"]];
 const SWATCHES = [
   ["#1b1b22","墨"],["#2a2d3a","濃いグレー"],["#6f7a99","青みグレー"],["#b8bdcb","銀"],["#ffffff","白"],
   ["#f4e9ff","パール"],["#c9a24b","金"],["#ffb067","オレンジ"],["#ff7fa8","ピンク"],["#d9434f","赤"],
@@ -1702,7 +1726,7 @@ function armDelete(d, onConfirm){
 }
 function renderSigs(){
   const el = $("#sigGrid"); el.textContent = "";
-  const list = allSigs().filter(s => !s.temp).filter(s => (S.cat === "all" && s.cat !== "parts") || s.cat === S.cat || (S.cat === "arrow" && s.genre === "矢印") || (S.cat === "gothic" && s.genre === "ゴシック"));
+  const list = allSigs().filter(s => !s.temp).filter(s => (S.cat === "all" && s.cat !== "parts") || s.cat === S.cat || (S.cat === "arrow" && s.genre === "矢印") || (S.cat === "sns" && s.genre === "SNS"));
   const cur = curPlace();
   if (!list.length){
     const e = document.createElement("div"); e.className = "empty"; e.style.gridColumn = "1/-1";
@@ -1712,9 +1736,9 @@ function renderSigs(){
   for (const s of list){
     const b = document.createElement("button"); b.className = "sig"; b.setAttribute("aria-pressed", !!(cur && cur.sig === s.id && !S.stackNext));
     const art = document.createElement("div"); art.className = "art"; art.style.setProperty("--m", `url("${s.mask}")`);
-    if (s.aspect < .15) art.style.setProperty("--ms", "260% auto"); else if (s.aspect < .35) art.style.setProperty("--ms", "115% auto"); else if (s.aspect > 5) art.style.setProperty("--ms", "auto 240%");
+    if (s.cat === "parts" || s.genre === "矢印"){ /* arrows and parts: show whole, heads included */ } else if (s.aspect < .15) art.style.setProperty("--ms", "260% auto"); else if (s.aspect < .35) art.style.setProperty("--ms", "115% auto"); else if (s.aspect > 5) art.style.setProperty("--ms", "auto 240%");
     const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = s.name;
-    const gn = document.createElement("div"); gn.className = "gn"; gn.textContent = s.genre;
+    const gn = document.createElement("div"); gn.className = "gn"; const plain = s.cat === "parts" || s.genre === "矢印"; gn.textContent = plain ? "" : (s.read || (s.custom ? "自分の署名" : s.genre)); if (plain) gn.hidden = true;
     b.append(art, nm, gn);
     b.onclick = (e) => { if (e.target.closest(".del")) return; pickSig(s); };
     if (s.custom){
@@ -1885,7 +1909,7 @@ function dupSel(){
   const copies = idx.map(i => { const q = clone(im.layers[i]); q.cx = clamp(q.cx + .04, -.3, 1.3); q.cy = clamp(q.cy + .04, -.3, 1.3); return q; });
   const start = im.layers.length; im.layers.push(...copies);
   if (S.multi){ im.ms = copies.map((_, k) => start + k); im.sel = im.ms[im.ms.length - 1]; } else { im.sel = start; im.noSel = false; }
-  draw(); commit(); refreshAll(); syncAlign(); toast(copies.length > 1 ? `${copies.length}つ複製しました` : "複製しました（少しずらして置きました）");
+  draw(); commit(); refreshAll(); syncAlign(); toast(copies.length > 1 ? `${copies.length}つ複製しました` : "複製しました");
 }
 $("#lyDup").onclick = () => dupSel(); const _oldDup = () => { const im = curImg(), p = curPlace(); if (!p) return; const q = clone(p); q.cx = clamp(q.cx + .03, 0, 1); q.cy = clamp(q.cy + .03, 0, 1); im.layers.splice(im.sel + 1, 0, q); im.sel++; im.noSel = false; draw(); commit(); toast("複製しました"); };
 $("#lyAdd").onclick = () => startStack();
@@ -2073,7 +2097,7 @@ $("#genAdj").onclick = () => setTab("adj");
 $("#genSave").onclick = async () => {
   const g = genList[genSel]; if (!g) return;
   const name = ($("#genName").value || "").trim() || (g.arrow ? `${g.text ? g.text + " " : ""}${SG.ASHAPES[g.shape]}矢印` : `${GEN.text} ${SG.THEMES[g.theme].n}`);
-  const rec = { id: rid(), name: name.slice(0, 40), kind: "svg", data: g.svg, place: g.place, anchor: g.anchor || null, createdAt: Date.now() };
+  const rec = { id: rid(), name: name.slice(0, 40), kind: "svg", data: g.svg, place: g.place, anchor: g.anchor || null, read: g.arrow ? null : (g.enc === "glyph" ? "読める" : "読めない"), arrow: !!g.arrow, createdAt: Date.now() };
   S.remap[rec.id] = g.sig.id;
   const btn = $("#genSave"); btn.disabled = true;
   try{ if (await Store.add(rec)){ $("#genName").value = ""; toast(`「${rec.name}」を自分の署名に保存しました`); } else delete S.remap[rec.id]; }
@@ -2283,7 +2307,7 @@ const Store = {
   }
 };
 function setCustom(recs){
-  S.custom = recs.map(r => makeSig({ id: r.id, name: r.name, cat: "custom", genre: "自分の署名", custom: true,
+  S.custom = recs.map(r => makeSig({ id: r.id, name: r.name, cat: "custom", genre: r.arrow ? "矢印" : "自分の署名", read: r.read || null, custom: true,
     svg: r.kind === "svg" ? r.data : null, png: r.kind === "png" ? r.data : null, aspect: r.aspect || 1, place: r.place, anchor: r.anchor }));
   if (S.remap){ for (const [nid, tid] of Object.entries(S.remap)) if (S.custom.some(s => s.id === nid)){ S.images.forEach(im => im.layers.forEach(l => { if (l.sig === tid) l.sig = nid; })); delete S.remap[nid]; } }
   renderSigs(); renderLayers(); draw();
@@ -2479,7 +2503,7 @@ async function makeZip(files){
 
 /* ---------------------------------------------------------------- toast */
 let tt = 0;
-function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 3200); }
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(tt); t.style.animation = "none"; void t.offsetWidth; t.style.animation = ""; tt = setTimeout(() => t.hidden = true, Math.min(4000, 1600 + msg.length * 45)); }
 
 /* ---------------------------------------------------------------- boot */
 S.sigs = BUILTIN.concat(PARTS).map(makeSig);
