@@ -232,6 +232,9 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
 .resetsec{margin-top:18px;padding-top:14px;border-top:1px dashed var(--line)}
 .btn.danger-o.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
 .btn.danger-o{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.decormix{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;display:grid;gap:8px;background:var(--sunk,rgba(0,0,0,.02))}
+.decormix .dmh{display:grid;gap:2px}.decormix .dmh b{font-size:13.5px}.decormix .dmh span{font-size:12px;color:var(--muted)}
+.decormix .dmb{display:flex;gap:6px;flex-wrap:wrap}
 .gcard{position:relative}.gsave{position:absolute;top:8px;right:8px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px}
 .paldet summary{cursor:pointer;font-size:13px;padding:6px 0;color:var(--accent);font-weight:500}
 .paldet[open] summary{margin-bottom:8px}
@@ -334,6 +337,10 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
       <div class="row" id="toAdjRow" hidden><button class="btn sm" id="toAdj">← 調整に戻る</button><button class="btn sm" id="remove">選んでいる署名を外す</button><button class="btn sm" id="removeAll">全部外す</button></div>
       <div class="banner" id="stackBanner" hidden><span>選んだものを、画像に<b>追加します</b>。「作る」タブで作ったものも追加できます</span><button class="btn sm" id="stackCancel">やめる</button></div>
       <div class="chips" id="cats"></div>
+        <div class="decormix" id="decorMix" hidden>
+          <div class="dmh"><b>ランダムに散らす</b><span>装飾をまとめて配置します。もう一度押すと入れ替わります</span></div>
+          <div class="dmb"><button class="btn sm" data-n="s">少なめ</button><button class="btn sm" data-n="m">ふつう</button><button class="btn sm" data-n="l">多め</button><button class="btn sm" id="mixClear">散らしたのを消す</button></div>
+        </div>
       <div class="grid" id="sigGrid"></div>
       <div class="sec">
         <h3>自分の署名</h3>
@@ -416,6 +423,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
           <div class="slider" id="lwRow"><label for="sLw">線の太さ</label><input type="range" id="sLw" min="20" max="300" step="5"><output id="oLw"></output></div>
           <div class="slider"><label for="sRot">回転</label><input type="range" id="sRot" min="-180" max="180" step="1"><output id="oRot"></output></div>
           <div class="slider"><label for="sOp">不透明度</label><input type="range" id="sOp" min="10" max="100" step="1"><output id="oOp"></output></div>
+          <div class="optrow"><span>重ね方</span><div class="chips" id="blendChips"></div></div>
         </div>
         <div class="sec">
           <h3>縁取り</h3>
@@ -1134,26 +1142,31 @@ function nameArrows(name, cs){
   return out;
 }
 
-/* SNS / web helpers: generic icons plus service names written in the original lettering (no brand logos). */
+
+/* Decorations: pattern pieces (band / square) with softly faded edges, for layering with signatures. */
 (() => {
-  const S = 'fill="none" stroke="#000" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"';
-  const svg = (vb, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`;
-  /* text in the original glyphs: 60x80 cells (descenders to 100) */
-  const word = (txt, sw) => { let x = 0, out = ""; for (const ch of txt){ if (ch === " "){ x += 40; continue; } const g = SG.G[ch] || SG.G[ch.toUpperCase()]; if (!g){ x += 40; continue; }
-      for (const pl of g) out += `<polyline points="${pl.map(([a, b]) => `${a + x},${b}`).join(" ")}" fill="none" stroke="#000" stroke-width="${sw || 5}" stroke-linecap="round" stroke-linejoin="round"/>`; x += 76; }
-    return { out, w: x - 16 }; };
-  const label = (id, name, txt) => { const w = word(txt, 5.5); return { id, name, cat: "parts", genre: "SNS", svg: svg(`-14 -14 ${w.w + 28} 128`, w.out) }; };
-  const at = word("@", 6);
-  const L = [
-    { id: "sn_at", name: "@マーク", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<circle cx="50" cy="50" r="44" ${S}/><g transform="translate(30 24) scale(.66)">${at.out}</g>`) },
-    { id: "sn_link", name: "リンク", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<path d="M44 58L58 44" ${S}/><path d="M40 46L28 58A13 13 0 0 0 46 76L56 66" ${S}/><path d="M60 54L72 42A13 13 0 0 0 54 24L44 34" ${S}/>`) },
-    { id: "sn_mail", name: "メール", cat: "parts", genre: "SNS", svg: svg("0 0 120 90", `<rect x="10" y="12" width="100" height="66" rx="8" ${S}/><path d="M12 16L60 52L108 16" ${S}/>`) },
-    { id: "sn_globe", name: "ウェブ", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<circle cx="50" cy="50" r="40" ${S}/><ellipse cx="50" cy="50" rx="17" ry="40" ${S}/><path d="M12 38H88M12 62H88" ${S}/>`) },
-    { id: "sn_cam", name: "カメラ", cat: "parts", genre: "SNS", svg: svg("0 0 120 100", `<path d="M14 32H36L44 20H76L84 32H106V84H14Z" ${S}/><circle cx="60" cy="57" r="17" ${S}/><circle cx="94" cy="44" r="2.5" fill="#000"/>`) },
-    { id: "sn_brush", name: "ペン", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<path d="M66 16L84 34L40 78L18 84L24 62Z" ${S}/><path d="M58 24L76 42M24 62L40 78" ${S}/>`) },
-    { id: "sn_user", name: "ひと", cat: "parts", genre: "SNS", svg: svg("0 0 100 100", `<circle cx="50" cy="36" r="16" ${S}/><path d="M18 86C20 66 34 58 50 58S80 66 82 86" ${S}/>`) }
-  ];
-  PARTS.unshift(...L);
+  const SW = 2.4, L = (d, w) => `<path d="${d}" fill="none" stroke="#000" stroke-width="${w || SW}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const PAT = {
+    lattice: ["菱形格子", (W, H) => { let d = ""; const s = 26; for (let k = -H; k < W + H; k += s){ d += `M${k} 0L${k + H} ${H}M${k} ${H}L${k + H} 0`; } return L(d, 1.8); }],
+    waves: ["波", (W, H) => { let d = ""; for (let y = 10; y < H; y += 18){ d += `M0 ${y}`; for (let x = 0; x <= W; x += 10) d += `L${x} ${(y + 5 * Math.sin(x / 40 * Math.PI * 2 + y)).toFixed(1)}`; } return L(d, 2); }],
+    dots: ["ドット", (W, H) => { let s = ""; for (let y = 9, r = 0; y < H; y += 18, r++) for (let x = (r % 2) * 9 + 9; x < W; x += 18) s += `<circle cx="${x}" cy="${y}" r="3.2" fill="#000"/>`; return s; }],
+    stripe: ["ストライプ", (W, H) => { let d = ""; for (let k = -H; k < W; k += 16) d += `M${k} ${H}L${k + H} 0`; return L(d, 3); }],
+    check: ["チェック", (W, H) => { let s = ""; const c = 20; for (let y = 0, r = 0; y < H; y += c, r++) for (let x = (r % 2) * c; x < W; x += c * 2) s += `<rect x="${x}" y="${y}" width="${c}" height="${c}" fill="#000" fill-opacity=".55"/>`; return s; }],
+    tri: ["三角格子", (W, H) => { let d = ""; const s = 30, h = s * .866; for (let y = 0; y <= H; y += h) d += `M0 ${y.toFixed(1)}H${W}`; for (let k = -H * 2; k < W + H; k += s){ d += `M${k} 0L${(k + H / .866 / 2 * 1).toFixed(1)} ${H}`; d += `M${k} ${H}L${(k + H / .866 / 2).toFixed(1)} 0`; } return L(d, 1.6); }],
+    chevron: ["山形", (W, H) => { let d = ""; for (let y = 12; y < H + 10; y += 22){ d += `M0 ${y}`; for (let x = 0; x <= W; x += 16) d += `L${x} ${y + ((x / 16) % 2 ? -7 : 7)}`; } return L(d, 2.2); }],
+    mesh: ["メッシュ", (W, H) => { let d = ""; for (let x = 6; x < W; x += 12) d += `M${x} 0V${H}`; for (let y = 6; y < H; y += 12) d += `M0 ${y}H${W}`; return L(d, 1.1); }],
+    lace: ["レース", (W, H) => { let s = "", d = ""; for (let y = 6; y < H; y += 34){ for (let x = 0; x < W; x += 28){ d += `M${x} ${y}a14 14 0 0 0 28 0`; s += `<circle cx="${x + 14}" cy="${y + 8}" r="2.6" fill="#000"/><circle cx="${x + 14}" cy="${y + 18}" r="1.6" fill="#000"/>`; } } return L(d, 1.8) + s; }]
+  };
+  const fade = (W, H, id, fx, fy) => `<defs><linearGradient id="${id}x" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="${fx}" stop-color="#fff"/><stop offset="${1 - fx}" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="${id}y" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="${fy}" stop-color="#fff"/><stop offset="${1 - fy}" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<mask id="${id}mx" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#${id}x)"/></mask><mask id="${id}my" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#${id}y)"/></mask></defs>`;
+  const make = (k, W, H, fx, fy, suf) => { const id = "d" + k + suf; return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">${fade(W, H, id, fx, fy)}<g mask="url(#${id}mx)"><g mask="url(#${id}my)">${PAT[k][1](W, H)}</g></g></svg>`; };
+  const out = [];
+  for (const k of Object.keys(PAT)){
+    out.push({ id: "dc_" + k + "_b", name: PAT[k][0] + "（帯）", cat: "parts", genre: "装飾", decor: "band", svg: make(k, 600, 110, .2, .18, "b") });
+    out.push({ id: "dc_" + k + "_s", name: PAT[k][0] + "（四角）", cat: "parts", genre: "装飾", decor: "sq", svg: make(k, 260, 260, .2, .2, "s") });
+  }
+  PARTS.push(...out);
 })();
 
 /* Built-in designs for the public edition: regenerated from the user's own name. */
@@ -1215,7 +1228,7 @@ const ls = { get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 /* ---------------------------------------------------------------- data */
-const CATS = [["all","すべて"],["line","横ライン"],["vert","縦ライン"],["corner","角"],["round","放射・円"],["sym","記号"],["arrow","矢印"],["parts","パーツ"],["sns","SNS"],["custom","自分の署名"]];
+const CATS = [["all","すべて"],["line","横ライン"],["vert","縦ライン"],["corner","角"],["round","放射・円"],["sym","記号"],["arrow","矢印"],["parts","パーツ"],["decor","装飾"],["custom","自分の署名"]];
 const SWATCHES = [
   ["#1b1b22","墨"],["#2a2d3a","濃いグレー"],["#6f7a99","青みグレー"],["#b8bdcb","銀"],["#ffffff","白"],
   ["#f4e9ff","パール"],["#c9a24b","金"],["#ffb067","オレンジ"],["#ff7fa8","ピンク"],["#d9434f","赤"],
@@ -1428,7 +1441,7 @@ function olTint(raster, col){
 function drawSig(x, p, ox, oy, dw, dh, raster, aspect){
   const sw = p.w * dw, sh = sw * aspect;
   x.save(); x.translate(ox + p.cx * dw, oy + p.cy * dh); x.rotate(p.rot * Math.PI / 180); x.scale(p.fx, p.fy);
-  x.globalAlpha = p.op;
+  x.globalAlpha = p.op; if (p.blend && p.blend !== "normal") x.globalCompositeOperation = p.blend;
   if (p.ol > 0){ const t = olTint(raster, p.olC || "#ffffff"), r = Math.max(dw, dh) * p.ol * .0009, n = Math.max(12, Math.min(32, Math.round(r * 2)));
     x.save(); if (p.olG > 0){ x.shadowColor = p.olC || "#ffffff"; x.shadowBlur = Math.max(dw, dh) * .02 * p.olG; }
     for (let k = 0; k < n; k++){ const a = k / n * Math.PI * 2; x.drawImage(t, -sw / 2 + Math.cos(a) * r, -sh / 2 + Math.sin(a) * r, sw, sh); } x.restore(); }
@@ -1732,7 +1745,14 @@ function armDelete(d, onConfirm){
 }
 function renderSigs(){
   const el = $("#sigGrid"); el.textContent = "";
-  const list = allSigs().filter(s => !s.temp).filter(s => (S.cat === "all" && s.cat !== "parts") || s.cat === S.cat || (S.cat === "arrow" && s.genre === "矢印") || (S.cat === "sns" && s.genre === "SNS"));
+  const inCat = (s) => { const g = s.genre;
+    if (S.cat === "all") return s.cat !== "parts";
+    if (S.cat === "arrow") return g === "矢印";
+    if (S.cat === "decor") return g === "装飾";
+    if (S.cat === "parts") return s.cat === "parts" && g !== "矢印" && g !== "装飾";
+    return s.cat === S.cat; };
+  const list = allSigs().filter(s => !s.temp).filter(inCat);
+  { const dm = document.getElementById("decorMix"); if (dm) dm.hidden = S.cat !== "decor"; }
   const cur = curPlace();
   if (!list.length){
     const e = document.createElement("div"); e.className = "empty"; e.style.gridColumn = "1/-1";
@@ -1847,6 +1867,7 @@ function syncAdj(){
   const sig = sigById(p.sig);
   $("#sSize").value = Math.round(p.w * 100); $("#oSize").textContent = Math.round(p.w * 100) + "%";
   $("#sRot").value = Math.round(p.rot); $("#oRot").textContent = Math.round(p.rot) + "°";
+  document.querySelectorAll("#blendChips button").forEach(b => b.setAttribute("aria-pressed", (p.blend || "normal") === b.dataset.v));
   $("#sOp").value = Math.round(p.op * 100); $("#oOp").textContent = Math.round(p.op * 100) + "%";
   $("#sLw").value = Math.round((p.lw || 1) * 100); $("#oLw").textContent = Math.round((p.lw || 1) * 100) + "%"; $("#lwRow").hidden = !(sig && sig.svg);
   $("#sOl").value = p.ol || 0; $("#oOl").textContent = p.ol ? String(p.ol) : "なし"; $("#sOlG").value = Math.round((p.olG || 0) * 100); $("#oOlG").textContent = Math.round((p.olG || 0) * 100) + "%";
@@ -2121,6 +2142,43 @@ function setTab(t){
 }
 for (const k of ["sig", "gen", "adj", "tpl", "exp"]) $("#t-" + k).onclick = () => setTab(k);
 
+
+/* ---------------------------------------------------------------- blend modes */
+{
+  const BL = [["normal", "通常"], ["multiply", "乗算"], ["screen", "スクリーン"], ["overlay", "オーバーレイ"], ["soft-light", "ソフトライト"], ["color-dodge", "覆い焼き"], ["color-burn", "焼き込み"], ["lighter", "加算"]];
+  const el = $("#blendChips");
+  for (const [v, l] of BL){ const b = document.createElement("button"); b.className = "chip"; b.dataset.v = v; b.textContent = l;
+    b.onclick = () => { const ts = targets(); if (!ts.length) return; ts.forEach(q => q.blend = v); draw(); commit(); syncAdj(); }; el.append(b); }
+}
+/* ---------------------------------------------------------------- decoration mix */
+{
+  const N = { s: 4, m: 7, l: 11 }, R = (a, b) => a + Math.random() * (b - a), pickOne = (a) => a[Math.floor(Math.random() * a.length)];
+  function scatter(k){
+    const im = curImg(); if (!im) return;
+    const pool = allSigs().filter(s => s.genre === "装飾"); if (!pool.length) return;
+    const base = curPlace(), col = base && !base.mix ? base.color : (im.mixColor || "#8f8ab8");
+    im.mixColor = col;
+    im.layers = im.layers.filter(l => !l.mix);
+    const n = N[k], placed = [];
+    for (let i = 0; i < n; i++){
+      const sig = pickOne(pool), sq = sig.decor === "sq";
+      const tier = i < Math.max(1, Math.round(n * .2)) ? "L" : i < Math.round(n * .55) ? "M" : "S";
+      const w = sq ? { L: R(.28, .4), M: R(.16, .24), S: R(.08, .13) }[tier] : { L: R(.5, .75), M: R(.3, .45), S: R(.16, .26) }[tier];
+      let cx = .5, cy = .5;
+      for (let t = 0; t < 40; t++){ cx = R(.06, .94); cy = R(.06, .94);
+        const away = Math.hypot((cx - .5) * 1.1, cy - .45) > .3 || Math.random() < .15;
+        const apart = placed.every(q => Math.hypot(q[0] - cx, q[1] - cy) > .14);
+        if (away && apart) break; }
+      placed.push([cx, cy]);
+      const layer = { sig: sig.id, cx, cy, w, rot: pickOne([0, 0, 0, 15, -15, 30, -30, 45, 90]), fx: 1, fy: 1, op: +R(.35, .75).toFixed(2), color: col, grad: null, orig: false, mix: true };
+      im.layers.unshift(layer); /* behind the signatures */
+    }
+    im.noSel = true; im.ms = []; im.sel = 0;
+    commit(); refreshAll(); draw(); toast(`装飾を${n}個散らしました`);
+  }
+  document.querySelectorAll("#decorMix [data-n]").forEach(b => b.onclick = () => scatter(b.dataset.n));
+  $("#mixClear").onclick = () => { const im = curImg(); if (!im) return; const n = im.layers.length; im.layers = im.layers.filter(l => !l.mix); if (im.layers.length === n) return; im.noSel = true; im.sel = 0; commit(); refreshAll(); draw(); toast("散らした装飾を消しました"); };
+}
 /* ---------------------------------------------------------------- multi-select & align */
 const AL_ICONS = {
   l: '<path d="M4 3v18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="7" y="6" width="12" height="4" rx="1" fill="currentColor"/><rect x="7" y="14" width="7" height="4" rx="1" fill="currentColor"/>',
