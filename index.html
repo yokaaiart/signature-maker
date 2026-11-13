@@ -96,6 +96,9 @@ body.multi .badge{display:none}
 #cpRecentRow{display:grid;gap:8px}.cp-recent button,.cp-grid button{width:28px;height:28px;border-radius:50%;border:1px solid rgba(0,0,0,.12);padding:0;background:var(--c)}
 .cp-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;justify-items:center}
 .cp-grid button[aria-pressed="true"],.cp-recent button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.cp-auto{width:100%;justify-content:center}
+.cp-gr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cp-gr .cpick{width:30px;height:30px}.cp-arrow{color:var(--muted);font-size:13px}.cp-gr .btn{margin-left:auto}
+#cpGrad button{background:var(--c)}
 .cp-pal summary{font-size:13px;cursor:pointer;padding:4px 0}
 .cp-more{border:0;background:none;color:var(--accent);font-size:13px;text-align:left;padding:2px 0;text-decoration:underline}
 .ur{position:absolute;left:8px;top:8px;display:flex;gap:6px;z-index:2}
@@ -328,14 +331,19 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
       <div class="cpop" id="cPop" hidden>
         <div class="cp-top"><i class="cp-cur" id="cpCur"></i><div class="cp-meta"><b>いまの色</b><span id="cpHex"></span></div>
           <div class="cp-tools"><button class="cp-ic" id="cpDrop" title="スポイト：絵から色を拾う" aria-label="スポイト">💧</button><label class="cp-ic" title="好きな色を選ぶ"><span>＋</span><input type="color" id="cpPick" aria-label="好きな色を選ぶ"></label></div></div>
+        <button class="btn sm cp-auto" id="cpAuto">✨ 背景に合わせて自動</button>
         <div id="cpRecentRow"><div class="cp-lab">最近使った色</div><div class="cp-grid cp-recent" id="cpRecent"></div></div>
         <div class="cp-lab">色見本</div>
         <div class="cp-grid" id="cpGrid"></div>
+        <div class="cp-lab">グラデーション</div>
+        <div class="cp-grid" id="cpGrad"></div>
+        <div class="cp-gr"><span class="cp-lab">自分の色で</span><label class="cpick" id="cpGA" title="はじめの色"><input type="color" aria-label="グラデーションのはじめの色"></label><span class="cp-arrow">→</span><label class="cpick" id="cpGB" title="おわりの色"><input type="color" aria-label="グラデーションのおわりの色"></label><button class="btn sm" id="cpGRecent" title="最近使った色の新しい2色でグラデーションにする">最近の2色で</button></div>
+        <div class="slider"><label for="cpAng">向き</label><input type="range" id="cpAng" min="0" max="180" step="5"><output id="cpAngO"></output></div>
         <details class="cp-pal"><summary>パレットから選ぶ</summary><div id="cpPal"></div></details>
         <div class="slider"><label for="cpOp">不透明度</label><input type="range" id="cpOp" min="10" max="100" step="1"><output id="cpOpO"></output></div>
         <div class="cp-lab">重ね方</div>
         <div class="chips cp-blend" id="cpBlend"></div>
-        <button class="cp-more" id="cpMore">グラデ・縁取り・線の太さ →</button>
+        <button class="cp-more" id="cpMore">縁取り・線の太さなど →</button>
       </div>
       <div class="hint" id="hint"><span>タップで選択・何もないところをなぞって範囲選択・ドラッグで移動・2本指で拡大と回転</span></div>
     </div>
@@ -2220,6 +2228,10 @@ function syncColorChip(){
   const pk = document.getElementById("cpPick"); if (/^#[0-9a-f]{6}$/i.test(p.color)) pk.value = p.color;
   document.getElementById("cpOp").value = Math.round(p.op * 100); document.getElementById("cpOpO").textContent = Math.round(p.op * 100) + "%";
   document.querySelectorAll("#cpBlend button").forEach(b => b.setAttribute("aria-pressed", (p.blend || "normal") === b.dataset.v));
+  document.querySelectorAll("#cpGrad button").forEach(b => b.setAttribute("aria-pressed", !!(p.grad && p.grad.stops.join() === b.dataset.s)));
+  { const g = p.grad, a = g ? g.stops[0] : (RECENT[0] || "#ff9ad5"), z = g ? g.stops[g.stops.length - 1] : (RECENT[1] || "#8fb8ff");
+    $("#cpGA").style.setProperty("--c", a); $("#cpGA input").value = a; $("#cpGB").style.setProperty("--c", z); $("#cpGB input").value = z;
+    const ang = g ? g.angle : 0; $("#cpAng").value = ang; $("#cpAngO").textContent = ang + "°"; $("#cpGRecent").disabled = RECENT.length < 2; }
 }
 {
   const chip = $("#cChip"), pop = $("#cPop");
@@ -2233,6 +2245,16 @@ function syncColorChip(){
   $("#cpOp").oninput = (e) => { const v = +e.target.value; targets().forEach(q => q.op = v / 100); $("#cpOpO").textContent = v + "%"; draw(); };
   $("#cpOp").onchange = () => { commit(); syncAdj(); };
   const bl = $("#cpBlend"); for (const [v, l] of BLENDS_UI){ const b = document.createElement("button"); b.className = "chip"; b.dataset.v = v; b.textContent = l; b.onclick = () => { targets().forEach(q => q.blend = v); draw(); commit(); syncAdj(); }; bl.append(b); }
+  $("#cpAuto").onclick = () => { if (!targets().length) return; const im = curImg(); setFill(q => { q.orig = false; q.grad = null; q.color = autoColorFor(im, q); }); commit(); renderSwatches(); syncColorChip(); toast("背景に合わせて色を選びました"); };
+  const gg = $("#cpGrad"); for (const [label, stops, angle] of GRADS){ const b = document.createElement("button"); b.dataset.s = stops.join(); b.style.setProperty("--c", gradCss({ stops, angle: 90 })); b.title = label; b.setAttribute("aria-label", "グラデーション " + label);
+    b.onclick = () => { if (!targets().length) return; setFill(q => { q.grad = { stops: stops.slice(), angle: q.grad ? q.grad.angle : angle }; q.orig = false; }); commit(); renderSwatches(); syncColorChip(); }; gg.append(b); }
+  const mine = (commitNow) => { if (!targets().length) return; const a = $("#cpGA input").value, z = $("#cpGB input").value; $("#cpGA").style.setProperty("--c", a); $("#cpGB").style.setProperty("--c", z);
+    setFill(q => { q.grad = { stops: [a, z], angle: q.grad ? q.grad.angle : +$("#cpAng").value }; q.orig = false; }); if (commitNow){ pushRecent(a); pushRecent(z); commit(); renderSwatches(); } syncColorChip(); };
+  $("#cpGA input").oninput = () => mine(false); $("#cpGB input").oninput = () => mine(false);
+  $("#cpGA input").onchange = () => mine(true); $("#cpGB input").onchange = () => mine(true);
+  $("#cpGRecent").onclick = () => { if (RECENT.length < 2 || !targets().length) return; const a = RECENT[1], z = RECENT[0]; setFill(q => { q.grad = { stops: [a, z], angle: q.grad ? q.grad.angle : 0 }; q.orig = false; }); commit(); renderSwatches(); syncColorChip(); };
+  $("#cpAng").oninput = (e) => { const v = +e.target.value; $("#cpAngO").textContent = v + "°"; setFill(q => { if (!q.grad) q.grad = { stops: [$("#cpGA input").value, $("#cpGB input").value], angle: v }; else q.grad.angle = v; q.orig = false; }); };
+  $("#cpAng").onchange = () => { commit(); renderSwatches(); syncColorChip(); };
   $("#cpMore").onclick = () => { open(false); setTab("adj"); if (window.openSheet && document.getElementById("dock").offsetParent) openSheet(true); };
   PAL.mount($("#cpPal"), { storeKey: "ps.pal", onColor: (hex) => useColor(hex),
     actions: [{ label: "グラデーションにする", fn: (cs) => { if (!targets().length) return; setFill(q => { q.grad = { stops: cs, angle: q.grad ? q.grad.angle : 0 }; q.orig = false; }); commit(); renderSwatches(); syncColorChip(); } }] });
