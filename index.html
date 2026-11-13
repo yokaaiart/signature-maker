@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><title>Signature Maker｜名前を入れるだけで作品に重ねるサインがつくれる</title>
-<meta name="description" content="名前やXのIDを入れるだけで、イラストに重ねる署名（サイン）デザインがつくれる無料ツール。画像は端末の外に送信されず、メタデータも消えます。by @yokaAIart">
+<meta name="description" content="名前やXのIDを入れるだけで、イラストに重ねる署名（サイン）デザインがつくれる無料ツール。画像は端末の外に送信されません。by @yokaAIart">
 <meta property="og:type" content="website"><meta property="og:title" content="Signature Maker"><meta property="og:description" content="名前を入れるだけで、作品に重ねるサインがつくれる。@ や ♡ もOK。画像は端末の外に送信されません。">
 <meta property="og:url" content="https://yokaaiart.github.io/signature-maker/"><meta property="og:image" content="https://yokaaiart.github.io/signature-maker/ogp.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@yokaAIart"><meta name="twitter:image" content="https://yokaaiart.github.io/signature-maker/ogp.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
@@ -345,7 +345,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
         <div class="chips cp-blend" id="cpBlend"></div>
         <button class="cp-more" id="cpMore">縁取り・線の太さなど →</button>
       </div>
-      <div class="hint" id="hint"><span>タップで選択・なぞって範囲選択・何もないところを2本指で画面移動</span></div>
+      <div class="hint" id="hint"><span>タップで選択・なぞって範囲選択・2本指で拡大と回転</span></div>
     </div>
     <div class="bars"><div class="strip" id="strip"></div>
     <div class="layers" id="layerBar" aria-label="この画像の署名"></div></div>
@@ -531,7 +531,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
           <div class="seg" id="fmtSeg"><button data-v="png">PNG</button><button data-v="jpg">JPG</button></div>
           <div class="slider" id="qWrap" style="flex:1;min-width:200px"><label for="sQ">画質</label><input type="range" id="sQ" min="70" max="100" step="1"><output id="oQ"></output></div>
         </div>
-        <p class="note">書き出す画像は、いつも背景を白で埋めた不透明な画像になります。プロンプトなどの文字情報も、NovelAIなどが透明度に隠している生成情報も、必ず消えます。</p>
+        <p class="note">透明な部分がある画像も、書き出すと背景が白になります（透明のままでは保存できません）。そのぶん、透明度に隠された生成情報なども残りにくくなります。</p>
       </div>
       <div class="sec">
         <h3>大きさ</h3>
@@ -548,7 +548,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
         <p class="note" id="namePreview"></p>
       </div>
       <div class="sec">
-        <p class="note">撮影日や位置、生成AIのプロンプトなどの情報は、書き出すときに必ず取り除かれます。元の画像は変更しません。</p>
+        <p class="note">書き出すときは絵だけを描き直して保存するので、撮影日や位置、生成AIのプロンプトなどの情報は基本的に残りません。元の画像は変更しません。<br>とても大きな画像や、一度にたくさんの画像を書き出すと、端末によっては動作が重くなったり止まったりすることがあります。そのときは枚数を分けてお試しください。</p>
         <button class="btn primary wide" id="showAll">写真に保存する（書き出して表示）</button>
         <p class="note">書き出した画像が下に並びます。画像を長押しして「写真に追加」（Androidは「画像をダウンロード」）を選ぶと、カメラロールに保存できます。</p>
         <button class="btn wide" id="saveOne">この画像をファイルに保存</button>
@@ -581,7 +581,9 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
   </ol>
   <h3>画像の扱い</h3>
   <ul><li>読み込んだ画像は、お使いの端末（ブラウザ）の中だけで処理されます。外部に送信・保存されることはありません。</li>
-  <li>書き出した画像には、生成AIのプロンプトなどの情報（メタデータ）は残りません。元の画像は変更されません。</li></ul>
+  <li>書き出すときは絵だけを描き直して保存するので、生成AIのプロンプトや撮影情報などのメタデータは基本的に残りません。元の画像は変更されません。</li>
+  <li>透明な部分がある画像は、書き出すと背景が白になります。</li>
+  <li>とても大きな画像や大量の画像は、端末によっては動作が重くなることがあります。</li></ul>
   <h3>ご自由にどうぞ</h3>
   <ul><li>このツールで作ったデザインは、ご自身の作品の署名としてはもちろん、キャラ紹介やアイコンまわりの飾りなど、ほかの用途にもご自由にお使いいただけます。</li>
   <li>個人の非商用での利用に限ります（販売する作品・グッズ、お仕事の制作物などには使えません）。</li>
@@ -1625,7 +1627,7 @@ cv.addEventListener("pointerdown", e => {
   if (!ptrs.size && selX && !S.multi && Math.hypot(pt.x - selX.x, pt.y - selX.y) < 18){ e.preventDefault(); removeSel(); return; }
   /* a second finger while drawing a box: two-finger pan/zoom of the view (nothing selected) or pinch the selection */
   if (ptrs.size === 1 && rb){ rb = null; const first = [...ptrs.values()][0]; ptrs.set(e.pointerId, pt); cv.setPointerCapture(e.pointerId);
-    if (true){ pan2 = { a: first, b: pt, px: vpx, py: vpy, z: vz, d0: Math.hypot(pt.x - first.x, pt.y - first.y) || 1, c0: { x: (pt.x + first.x) / 2, y: (pt.y + first.y) / 2 } }; draw(); return; }
+    if (!curSelIdx().length){ pan2 = { a: first, b: pt, px: vpx, py: vpy, z: vz, d0: Math.hypot(pt.x - first.x, pt.y - first.y) || 1, c0: { x: (pt.x + first.x) / 2, y: (pt.y + first.y) / 2 } }; draw(); return; }
     if (S.multi){ const ps = [...ptrs.values()]; gest = { group: [], pts: [ps[0]], pinch: { st: groupStates(), d0: Math.hypot(ps[1].x - ps[0].x, ps[1].y - ps[0].y) || 1, a0: Math.atan2(ps[1].y - ps[0].y, ps[1].x - ps[0].x), c0: { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 } } }; draw(); return; }
     showBox = true; startGesture(); draw(); return; }
   if (!im.layers.length) return;
@@ -1654,7 +1656,7 @@ cv.addEventListener("pointermove", e => {
   if (!ptrs.has(e.pointerId)) return;
   if (rb && rb.id === e.pointerId){ const pt = pos(e); rb.x = pt.x; rb.y = pt.y; ptrs.set(e.pointerId, pt); draw(); return; }
   if (pan2){ ptrs.set(e.pointerId, pos(e)); const ps = [...ptrs.values()]; if (ps.length < 2) return; const d = Math.hypot(ps[1].x - ps[0].x, ps[1].y - ps[0].y), c = { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 };
-    const nz = clamp(pan2.z * d / pan2.d0, .25, 8); vz = nz; vpx = pan2.px + c.x - pan2.c0.x; vpy = pan2.py + c.y - pan2.c0.y; syncZoom(); draw(); return; }
+    vpx = pan2.px + c.x - pan2.c0.x; vpy = pan2.py + c.y - pan2.c0.y; draw(); return; } /* fingers only move the view; zoom is the − / ＋ buttons */
   if (!gest) return;
   ptrs.set(e.pointerId, pos(e));
   const pts = [...ptrs.values()];
