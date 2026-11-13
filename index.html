@@ -345,7 +345,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
         <div class="chips cp-blend" id="cpBlend"></div>
         <button class="cp-more" id="cpMore">縁取り・線の太さなど →</button>
       </div>
-      <div class="hint" id="hint"><span>タップで選択・何もないところをなぞって範囲選択・ドラッグで移動・2本指で拡大と回転</span></div>
+      <div class="hint" id="hint"><span>タップで選択・なぞって範囲選択・何もないところを2本指で画面移動</span></div>
     </div>
     <div class="bars"><div class="strip" id="strip"></div>
     <div class="layers" id="layerBar" aria-label="この画像の署名"></div></div>
@@ -1495,10 +1495,10 @@ function draw(){
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cw, ch);
     const im = curImg(); $("#sampleBadge").hidden = !(im && im.sample);
     if (!im) return;
-    const pad = 10, s = Math.min((cw - pad * 2) / im.w, (ch - pad * 2) / im.h) * vz;
+    const pad = 10, top = 56, s = Math.min((cw - pad * 2) / im.w, (ch - top - pad) / im.h) * vz;
     const dw = im.w * s, dh = im.h * s;
-    if (vz > 1){ const mx = Math.max(0, (dw - cw) / 2 + 40), my = Math.max(0, (dh - ch) / 2 + 40); vpx = clamp(vpx, -mx, mx); vpy = clamp(vpy, -my, my); }
-    const ox = (cw - dw) / 2 + vpx, oy = (ch - dh) / 2 + vpy;
+    { const keep = 80, mx = (cw + dw) / 2 - keep, my = (ch + dh) / 2 - keep; vpx = clamp(vpx, -mx, mx); vpy = clamp(vpy, -my, my); }
+    const ox = (cw - dw) / 2 + vpx, oy = (ch - dh) / 2 + vpy + (top - pad) / 2;
     view = { ox, oy, s, dw, dh };
     ctx.drawImage(im.bmp, ox, oy, dw, dh);
     ctx.save(); ctx.beginPath(); ctx.rect(ox, oy, dw, dh); ctx.clip();
@@ -1621,7 +1621,7 @@ cv.addEventListener("pointerdown", e => {
   if (!ptrs.size && selX && !S.multi && Math.hypot(pt.x - selX.x, pt.y - selX.y) < 18){ e.preventDefault(); removeSel(); return; }
   /* a second finger while drawing a box: two-finger pan/zoom of the view (nothing selected) or pinch the selection */
   if (ptrs.size === 1 && rb){ rb = null; const first = [...ptrs.values()][0]; ptrs.set(e.pointerId, pt); cv.setPointerCapture(e.pointerId);
-    if (!curSelIdx().length){ pan2 = { a: first, b: pt, px: vpx, py: vpy, z: vz, d0: Math.hypot(pt.x - first.x, pt.y - first.y) || 1, c0: { x: (pt.x + first.x) / 2, y: (pt.y + first.y) / 2 } }; draw(); return; }
+    if (true){ pan2 = { a: first, b: pt, px: vpx, py: vpy, z: vz, d0: Math.hypot(pt.x - first.x, pt.y - first.y) || 1, c0: { x: (pt.x + first.x) / 2, y: (pt.y + first.y) / 2 } }; draw(); return; }
     if (S.multi){ const ps = [...ptrs.values()]; gest = { group: [], pts: [ps[0]], pinch: { st: groupStates(), d0: Math.hypot(ps[1].x - ps[0].x, ps[1].y - ps[0].y) || 1, a0: Math.atan2(ps[1].y - ps[0].y, ps[1].x - ps[0].x), c0: { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 } } }; draw(); return; }
     showBox = true; startGesture(); draw(); return; }
   if (!im.layers.length) return;
@@ -1650,7 +1650,7 @@ cv.addEventListener("pointermove", e => {
   if (!ptrs.has(e.pointerId)) return;
   if (rb && rb.id === e.pointerId){ const pt = pos(e); rb.x = pt.x; rb.y = pt.y; ptrs.set(e.pointerId, pt); draw(); return; }
   if (pan2){ ptrs.set(e.pointerId, pos(e)); const ps = [...ptrs.values()]; if (ps.length < 2) return; const d = Math.hypot(ps[1].x - ps[0].x, ps[1].y - ps[0].y), c = { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 };
-    const nz = clamp(pan2.z * d / pan2.d0, 1, 8); vz = nz; vpx = (pan2.px + c.x - pan2.c0.x) * 1; vpy = (pan2.py + c.y - pan2.c0.y); if (vz === 1){ vpx = vpy = 0; } syncZoom(); draw(); return; }
+    const nz = clamp(pan2.z * d / pan2.d0, .25, 8); vz = nz; vpx = pan2.px + c.x - pan2.c0.x; vpy = pan2.py + c.y - pan2.c0.y; syncZoom(); draw(); return; }
   if (!gest) return;
   ptrs.set(e.pointerId, pos(e));
   const pts = [...ptrs.values()];
@@ -1696,7 +1696,11 @@ function endPtr(e){ if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId)
   if (ptrs.size){ if (!S.multi) startGesture(); else if (gest && gest.group){ const im2 = curImg(), rest = [...ptrs.values()][0]; gest = { group: (im2.ms || []).map(i => ({ i, cx: im2.layers[i].cx, cy: im2.layers[i].cy })), pts: [rest] }; } } else { gest = null; showBox = false; draw(); commit(); } }
 cv.addEventListener("pointerup", endPtr); cv.addEventListener("pointercancel", endPtr);
 cv.addEventListener("wheel", e => {
-  const p = curPlace(); if (!p) return; e.preventDefault();
+  /* Ctrl/⌘ + wheel (or trackpad pinch) zooms the view; with nothing selected the wheel moves the view */
+  if (e.ctrlKey || e.metaKey){ e.preventDefault(); zoomBy(Math.exp(-e.deltaY * .002)); return; }
+  const p = curPlace();
+  if (!p){ e.preventDefault(); vpx -= e.shiftKey ? e.deltaY : e.deltaX; vpy -= e.shiftKey ? 0 : e.deltaY; draw(); return; }
+  e.preventDefault();
   if (targets().length > 1){ groupXform(groupStates(), e.shiftKey ? 1 : Math.exp(-e.deltaY * .0015), e.shiftKey ? (e.deltaY > 0 ? 2 : -2) : 0, 0, 0); draw(); clearTimeout(cv._wt); cv._wt = setTimeout(commit, 200); return; }
   if (e.shiftKey) p.rot = norm(p.rot + (e.deltaY > 0 ? 2 : -2));
   else p.w = clamp(p.w * Math.exp(-e.deltaY * .0015), .02, 2.5);
@@ -2039,9 +2043,9 @@ document.addEventListener("keydown", (e) => {
 /* view zoom */
 var vz = 1, vpx = 0, vpy = 0, panning = null;
 function resetView(){ vz = 1; vpx = vpy = 0; syncZoom(); }
-function syncZoom(){ $("#zFit").textContent = Math.round(vz * 100) + "%"; $("#zOut").disabled = vz <= 1; }
-function zoomBy(f){ const nz = clamp(vz * f, 1, 8); vpx *= nz / vz; vpy *= nz / vz; vz = nz; if (vz === 1){ vpx = vpy = 0; } syncZoom(); draw(); }
-$("#zIn").onclick = () => zoomBy(1.5); $("#zOut").onclick = () => zoomBy(1 / 1.5); $("#zFit").onclick = () => { resetView(); draw(); };
+function syncZoom(){ $("#zFit").textContent = Math.round(vz * 100) + "%"; $("#zOut").disabled = vz <= .25; $("#zIn").disabled = vz >= 8; }
+function zoomBy(f){ const nz = clamp(Math.round(vz * f * 100) / 100, .25, 8); vpx *= nz / vz; vpy *= nz / vz; vz = nz; syncZoom(); draw(); }
+$("#zIn").onclick = () => zoomBy(vz < 1 ? 1.25 : 1.5); $("#zOut").onclick = () => zoomBy(vz <= 1 ? .8 : 1 / 1.5); $("#zFit").onclick = () => { resetView(); draw(); };
 cv.addEventListener("pointermove", (e) => { if (!panning || e.pointerId !== panning.id) return; const pt = pos(e); vpx = panning.px + pt.x - panning.x; vpy = panning.py + pt.y - panning.y; draw(); });
 for (const ev of ["pointerup", "pointercancel"]) cv.addEventListener(ev, (e) => { if (panning && e.pointerId === panning.id){ panning = null; cv.style.cursor = ""; } });
 syncZoom();
