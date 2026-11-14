@@ -421,7 +421,6 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
     <div class="pane" id="p-adj" role="tabpanel" aria-labelledby="t-adj" hidden>
       <div class="empty" id="adjEmpty"><span id="adjEmptyMsg">「署名」タブで署名を選ぶと、ここで色や大きさを調整できます。</span><div style="margin-top:10px"><button class="btn primary sm" id="toSig1">署名を選ぶ</button></div></div>
       <div id="adjBody" class="pane" style="padding:0">
-        <nav class="jump" id="adjJump" aria-label="調整の項目へ移動"></nav>
         <div class="sec">
           <h3>選んでいる署名</h3>
           <p class="note" id="multiNote" hidden></p>
@@ -2182,7 +2181,7 @@ genChips("#genEnc", "enc", SG.ENCS); genChips("#genShape", "shape", SG.SHAPES); 
 genChips("#genAShape", "ashape", SG.ASHAPES); genChips("#genAHead", "ahead", SG.AHEADS);
 function fixedChips(id, key, pairs, after){ const el = $(id); const draw = () => { el.textContent = ""; for (const [k, l] of pairs){ const b = document.createElement("button"); b.className = "chip"; b.textContent = l; b.setAttribute("aria-pressed", GEN[key] === k); b.onclick = () => { GEN[key] = k; ls.set("ps.gen", GEN); draw(); if (after) after(); }; el.append(b); } }; draw(); }
 fixedChips("#genAEnds", "aends", [["auto", "おまかせ"], ["one", "片方"], ["both", "両方"]]);
-fixedChips("#genADir", "adir", [["right", "→ 右"], ["left", "← 左"], ["up", "↑ 上"], ["down", "↓ 下"], ["auto", "おまかせ"]]);
+fixedChips("#genADir", "adir", [["auto", "おまかせ"], ["right", "→ 右"], ["left", "← 左"], ["up", "↑ 上"], ["down", "↓ 下"]]);
 fixedChips("#genAText", "atext", [["yes", "入れる"], ["no", "入れない"]]);
 function genModeSync(){ const a = GEN.mode === "arrow"; document.querySelectorAll("#p-gen .ar").forEach(e => e.hidden = !a); $("#rowShape").hidden = a;
   $("#genGoSub").textContent = a ? "矢印を作る（8つ）" : "署名を作る（8つ）";
@@ -2346,14 +2345,6 @@ function alignOp(k){
     b.onclick = () => { if (!targets().length) return; groupXform(groupStates(), k, 0, 0, 0); draw(); commit(); }; el.append(b); }
   $("#msAll").onclick = () => { const im = curImg(); if (!im) return; setSel(im.layers.map((_, i) => i)); };
   $("#msDone").onclick = () => setMulti(false);
-}
-/* ---------------------------------------------------------------- adjust: jump chips */
-{
-  const nav = $("#adjJump"), want = { "色": "色", "グラデーション": "グラデ", "大きさ・向き": "大きさ", "縁取り": "縁取り", "位置": "位置" };
-  $("#adjBody").querySelectorAll(".sec > h3").forEach(h => { const l = want[h.textContent.trim()]; if (!l) return;
-    const b = document.createElement("button"); b.className = "chip"; b.textContent = l;
-    b.onclick = () => { const pan = $("#panel"), top = h.getBoundingClientRect().top - pan.getBoundingClientRect().top + pan.scrollTop - nav.offsetHeight - (document.querySelector(".sheet-head").offsetHeight || 0) - 6; pan.scrollTo({ top, behavior: "smooth" }); };
-    nav.append(b); });
 }
 /* ---------------------------------------------------------------- phone sheet */
 {
