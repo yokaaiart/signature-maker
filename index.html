@@ -101,6 +101,13 @@ body.multi .badge{display:none}
 #cpGrad button{background:var(--c)}
 .cp-pal summary{font-size:13px;cursor:pointer;padding:4px 0}
 .cp-more{border:0;background:none;color:var(--accent);font-size:13px;text-align:left;padding:2px 0;text-decoration:underline}
+.behindchk{display:flex;align-items:center;gap:8px;font-size:14px;margin:4px 0 6px}
+.cmbar{position:absolute;left:8px;right:8px;bottom:8px;z-index:5;background:color-mix(in srgb,var(--surface) 96%,transparent);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:grid;gap:8px;box-shadow:0 8px 24px rgba(20,24,40,.16)}
+.cm-row{display:flex;align-items:center;gap:8px}.cm-row label{font-size:12px;color:var(--muted);width:64px;flex:none}.cm-row input[type=range]{flex:1;min-width:0}.cm-row output{font-size:12px;width:24px;text-align:right}
+#cmMode{flex:1;display:flex}#cmMode button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px}#cmMode i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.cm-note{margin:0;font-size:11.5px;color:var(--muted)}
+@media (min-width:920px){.cmbar{right:auto;width:420px}}
+body.cmedit .ur,body.cmedit .tr{visibility:hidden}
 .ur{position:absolute;left:8px;top:8px;display:flex;gap:6px;z-index:2}
 .ur .layer.ico[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .ur .layer.ico{background:color-mix(in srgb,var(--surface) 90%,transparent);margin:0}
@@ -319,6 +326,13 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
       <canvas id="cv" tabindex="0" aria-label="画像と署名のプレビュー。タップで署名を選び、ドラッグで移動、2本指で拡大と回転"></canvas>
       <div class="badge" id="sampleBadge" hidden>サンプル画像</div>
       <div class="ur" id="urBox"></div>
+      <!--BEHIND--><div class="cmbar" id="cmBar" hidden>
+        <div class="cm-row"><div class="seg" id="cmMode"><button data-v="1" aria-pressed="true"><i style="background:#1f8a5a"></i>キャラにする</button><button data-v="0" aria-pressed="false"><i style="background:#c23b4a"></i>背景にする</button></div>
+          <button class="btn sm" id="cmUndo" aria-label="ひとつ戻す">↶</button><button class="btn sm primary" id="cmDone">完了</button></div>
+        <div class="cm-row"><label>ブラシ</label><input type="range" id="cmSize" min="4" max="90" value="24"><output id="cmSizeO">24</output></div>
+        <div class="cm-row"><label>自動の強さ</label><input type="range" id="cmTol" min="8" max="90" value="34"><button class="btn sm" id="cmAuto">自動で作り直す</button></div>
+        <p class="cm-note">緑がキャラの範囲。なぞって直してね（2本指で画面移動）<br>腕の間など囲まれたすき間は「背景にする」でなぞってね</p>
+      </div><!--/BEHIND-->
       <div class="umenu" id="clearMenu" hidden role="menu">
         <button role="menuitem" id="clearThis">この画像の署名を全部消す</button>
         <button role="menuitem" id="clearEvery">全部の画像の署名を消す</button>
@@ -476,6 +490,12 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
             <button class="btn" id="full">端から端まで</button>
           </div>
         </div>
+        <!--BEHIND--><div class="sec" id="behindSec">
+          <h3>キャラの後ろ</h3>
+          <label class="behindchk"><input type="checkbox" id="behindOn"> キャラの後ろに入れる</label>
+          <p class="note">キャラの形を自動で切り抜いて、署名をその後ろに回り込ませます。背景が無地の絵向けです。はみ出したところは「範囲を直す」でなぞって直せます。</p>
+          <button class="btn sm" id="cmEditBtn">キャラの範囲を直す</button>
+        </div><!--/BEHIND-->
         <div class="sec">
           <h3>位置</h3>
           <div class="row" style="align-items:flex-start;gap:14px">
@@ -576,6 +596,7 @@ select,input[type=text]{border:1px solid var(--line);background:var(--bg);border
   <li>「＋ 追加」で、署名やパーツ（♡や矢印など）をいくつでも追加できます。</li>
   <li>「調整」で色・縁取り・線の太さ。絵からスポイトで色も拾えます。</li>
   <li>「作る」で、新しい署名や矢印を自分で作って保存できます。</li>
+  <li>「調整」の「キャラの後ろに入れる」で、署名をキャラの後ろに回せます。キャラの形は自動で切り抜き、「キャラの範囲を直す」でなぞって直せます（直した範囲は、ページを開き直すと自動の状態に戻ります）。</li>
   <li>「＋ 画像」で自分の絵を読み込み、「書き出し」で保存します。</li>
   </ol>
   <h3>画像の扱い</h3>
@@ -1263,6 +1284,7 @@ function makeBuiltins(name, cs){
 let PUB_NAME = (() => { try{ return JSON.parse(localStorage.getItem("ps.name")) || "Viola"; }catch(e){ return "Viola"; } })();
 let PUB_CASE = (() => { try{ return JSON.parse(localStorage.getItem("ps.case")) || "asis"; }catch(e){ return "asis"; } })();
 const BUILTIN = makeBuiltins(PUB_NAME, PUB_CASE);
+const FEAT_BEHIND = true;
 
 (() => {
 "use strict";
@@ -1507,7 +1529,12 @@ function draw(){
     view = { ox, oy, s, dw, dh };
     ctx.drawImage(im.bmp, ox, oy, dw, dh);
     ctx.save(); ctx.beginPath(); ctx.rect(ox, oy, dw, dh); ctx.clip();
-    for (const p of im.layers){ const sig = sigById(p.sig); if (!sig) continue; const r = rasterNow(sig, p); if (r) drawSig(ctx, p, ox, oy, dw, dh, r, sig.aspect); }
+    const cut = (window.CHAR && CHAR.on(im)) ? CHAR.cut(im) : null;
+    for (const pass of cut ? [1, 0] : [0]){
+      for (const p of im.layers){ if (cut && !!p.behind !== !!pass) continue; const sig = sigById(p.sig); if (!sig) continue; const r = rasterNow(sig, p); if (r) drawSig(ctx, p, ox, oy, dw, dh, r, sig.aspect); }
+      if (pass === 1) ctx.drawImage(cut, ox, oy, dw, dh);
+    }
+    if (window.CHAR && S.cmEdit) CHAR.overlay(ctx, im, ox, oy, dw, dh);
     ctx.restore();
     const p = curPlace(), sig = p && sigById(p.sig);
     const acc = getComputedStyle(document.documentElement).getPropertyValue("--accent");
@@ -1621,6 +1648,7 @@ cv.addEventListener("pointerdown", e => {
   if (S.pick){ S.pick = false; cv.style.cursor = ""; const fx = (pt.x - view.ox) / view.dw, fy = (pt.y - view.oy) / view.dh;
     if (fx < 0 || fx > 1 || fy < 0 || fy > 1){ toast("スポイトをやめました"); return; }
     const hex = pixAt(im, fx, fy); setFill(q => { q.color = hex; q.grad = null; q.orig = false; }); $("#origColor").checked = false; commit(); renderSwatches(); syncColorChip(); toast(`${hex} を使いました`); return; }
+  if (window.CHAR && S.cmEdit){ CHAR.down(e, pt); return; }
   /* panning: Space+drag or middle button with a mouse */
   if (!ptrs.size && (spaceDown || e.button === 1)){ panning = { id: e.pointerId, x: pt.x, y: pt.y, px: vpx, py: vpy }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; e.preventDefault(); return; }
   if (!ptrs.size && selX && !S.multi && Math.hypot(pt.x - selX.x, pt.y - selX.y) < 18){ e.preventDefault(); removeSel(); return; }
@@ -1652,6 +1680,7 @@ cv.addEventListener("pointerdown", e => {
   cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pt); showBox = true; $("#hint").hidden = true; startGesture(); draw();
 });
 cv.addEventListener("pointermove", e => {
+  if (window.CHAR && S.cmEdit && CHAR.move(e)) return;
   if (!ptrs.has(e.pointerId)) return;
   if (rb && rb.id === e.pointerId){ const pt = pos(e); rb.x = pt.x; rb.y = pt.y; ptrs.set(e.pointerId, pt); draw(); return; }
   if (pan2){ ptrs.set(e.pointerId, pos(e)); const ps = [...ptrs.values()]; if (ps.length < 2) return; const d = Math.hypot(ps[1].x - ps[0].x, ps[1].y - ps[0].y), c = { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 };
@@ -1686,7 +1715,7 @@ cv.addEventListener("pointermove", e => {
   p.cx = clamp(p.cx, -.3, 1.3); p.cy = clamp(p.cy, -.3, 1.3);
   draw();
 });
-function endPtr(e){ if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId);
+function endPtr(e){ if (window.CHAR && S.cmEdit) CHAR.up(e); if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId);
   const im = curImg();
   if (pan2){ if (!ptrs.size) pan2 = null; return; }
   if (rb && rb.id === e.pointerId){ const r = rb; rb = null;
@@ -1927,7 +1956,7 @@ $("#gA input").oninput = customGrad; $("#gB input").oninput = customGrad;
 $("#gA input").onchange = () => { commit(); }; $("#gB input").onchange = () => { commit(); };
 $("#sAng").oninput = (e) => { const v = +e.target.value; $("#oAng").textContent = v + "°"; setFill(q => { if (!q.grad) q.grad = { stops: [$("#gA input").value, $("#gB input").value], angle: v }; else q.grad.angle = v; q.orig = false; }); };
 $("#sAng").onchange = commit;
-function syncAdj(){ syncColorChip();
+function syncAdj(){ syncColorChip(); if (window.CHAR) CHAR.sync();
   const p = curPlace(), im = curImg();
   $("#toAdjRow").hidden = !(S.tab === "sig" && p);
   $("#adjEmpty").hidden = !!p; $("#adjBody").hidden = !p;
@@ -2269,6 +2298,105 @@ function syncColorChip(){
     actions: [{ label: "グラデーションにする", fn: (cs) => { if (!targets().length) return; setFill(q => { q.grad = { stops: cs, angle: q.grad ? q.grad.angle : 0 }; q.orig = false; }); commit(); renderSwatches(); syncColorChip(); } }] });
 }
 window.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A") && !/input|textarea|select/i.test((document.activeElement || {}).tagName || "")){ const im = curImg(); if (!im || !im.layers.length) return; e.preventDefault(); setSel(im.layers.map((_, i) => i)); } });
+
+/* ---------------------------------------------------------------- behind the character (own edition only) */
+if (typeof FEAT_BEHIND !== "undefined" && FEAT_BEHIND) (() => {
+  const MAX = 1200;
+  const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+  function ensure(im){ if (!im.cm) auto(im, 34); return im.cm; }
+  /* background = the colour that fills the border; flood from the edges through pixels close to it */
+  function auto(im, tol){
+    const k = Math.min(1, MAX / Math.max(im.w, im.h)), w = Math.max(1, Math.round(im.w * k)), h = Math.max(1, Math.round(im.h * k));
+    const src = mk(w, h), sx = src.getContext("2d", { willReadFrequently: true }); sx.drawImage(im.bmp, 0, 0, w, h);
+    const d = sx.getImageData(0, 0, w, h).data, N = w * h;
+    const bins = new Map(), border = [];
+    for (let x = 0; x < w; x++){ border.push(x, (h - 1) * w + x); } for (let y = 1; y < h - 1; y++){ border.push(y * w, y * w + w - 1); }
+    for (const i of border){ const o = i * 4, key = (d[o] >> 4) << 8 | (d[o + 1] >> 4) << 4 | (d[o + 2] >> 4); const b = bins.get(key) || { n: 0, r: 0, g: 0, bl: 0 }; b.n++; b.r += d[o]; b.g += d[o + 1]; b.bl += d[o + 2]; bins.set(key, b); }
+    let best = null; for (const b of bins.values()) if (!best || b.n > best.n) best = b;
+    const br = best.r / best.n, bg = best.g / best.n, bb = best.bl / best.n, t2 = tol * tol;
+    const near = (i) => { const o = i * 4; if (d[o + 3] < 20) return true; const r = d[o] - br, g = d[o + 1] - bg, b = d[o + 2] - bb; return r * r * .3 + g * g * .59 + b * b * .11 < t2 * .5; };
+    const isBg = new Uint8Array(N), q = new Int32Array(N); let qh = 0, qt = 0;
+    for (const i of border) if (!isBg[i] && near(i)){ isBg[i] = 1; q[qt++] = i; }
+    while (qh < qt){ const i = q[qh++], x = i % w, y = (i / w) | 0;
+      if (x > 0 && !isBg[i - 1] && near(i - 1)){ isBg[i - 1] = 1; q[qt++] = i - 1; }
+      if (x < w - 1 && !isBg[i + 1] && near(i + 1)){ isBg[i + 1] = 1; q[qt++] = i + 1; }
+      if (y > 0 && !isBg[i - w] && near(i - w)){ isBg[i - w] = 1; q[qt++] = i - w; }
+      if (y < h - 1 && !isBg[i + w] && near(i + w)){ isBg[i + w] = 1; q[qt++] = i + w; } }
+    /* drop tiny specks of "character" */
+    const lab = new Int32Array(N), minA = Math.max(30, N * .0004);
+    for (let s = 0; s < N; s++){ if (isBg[s] || lab[s]) continue; let h0 = 0, t0 = 0; q[t0++] = s; lab[s] = 1;
+      while (h0 < t0){ const i = q[h0++], x = i % w; for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) if (j >= 0 && j < N && !isBg[j] && !lab[j]){ lab[j] = 1; q[t0++] = j; } }
+      if (t0 < minA) for (let k2 = 0; k2 < t0; k2++) isBg[q[k2]] = 1; }
+    /* shrink 1px so the light fringe of the outline does not cover what is behind */
+    const a = new Uint8ClampedArray(N);
+    for (let i = 0; i < N; i++){ if (isBg[i]) continue; const x = i % w; if ((x > 0 && isBg[i - 1]) || (x < w - 1 && isBg[i + 1]) || (i >= w && isBg[i - w]) || (i < N - w && isBg[i + w])) a[i] = 110; else a[i] = 255; }
+    const m = mk(w, h), mx = m.getContext("2d", { willReadFrequently: true }), id = mx.createImageData(w, h);
+    for (let i = 0; i < N; i++){ const o = i * 4; id.data[o] = id.data[o + 1] = id.data[o + 2] = 255; id.data[o + 3] = a[i]; }
+    mx.putImageData(id, 0, 0);
+    im.cm = { m, w, h, v: (im.cm ? im.cm.v : 0) + 1, hist: im.cm ? im.cm.hist : [] };
+  }
+  const cache = new WeakMap();
+  function cutAt(im, W, H){
+    const cm = ensure(im), c = mk(W, H), x = c.getContext("2d");
+    x.drawImage(im.bmp, 0, 0, W, H); x.globalCompositeOperation = "destination-in"; x.imageSmoothingQuality = "high"; x.drawImage(cm.m, 0, 0, W, H); return c;
+  }
+  function cut(im){
+    const cm = ensure(im), k = Math.min(1, 2000 / Math.max(im.w, im.h)), W = Math.round(im.w * k), H = Math.round(im.h * k);
+    const hit = cache.get(im); if (hit && hit.v === cm.v && hit.W === W) return hit.c;
+    const c = cutAt(im, W, H); cache.set(im, { v: cm.v, W, c }); return c;
+  }
+  let tintC = null, tintV = -1, tintIm = null;
+  function overlay(x, im, ox, oy, dw, dh){
+    const cm = ensure(im);
+    if (!tintC || tintV !== cm.v || tintIm !== im){ tintC = mk(cm.w, cm.h); const t = tintC.getContext("2d"); t.drawImage(cm.m, 0, 0); t.globalCompositeOperation = "source-in"; t.fillStyle = "#1f8a5a"; t.fillRect(0, 0, cm.w, cm.h); tintV = cm.v; tintIm = im; }
+    x.save(); x.globalAlpha = .38; x.drawImage(tintC, ox, oy, dw, dh); x.restore();
+    if (cur && cur.show){ x.save(); x.strokeStyle = "#fff"; x.lineWidth = 2.5; x.beginPath(); x.arc(cur.x, cur.y, size / 2, 0, Math.PI * 2); x.stroke(); x.strokeStyle = "#222"; x.lineWidth = 1; x.stroke(); x.restore(); }
+  }
+  /* ------- brush editing */
+  let mode = 1, size = 24, stroke = null, cur = null;
+  const fingers = new Map();
+  function snap(cm){ const x = cm.m.getContext("2d"); cm.hist.push(x.getImageData(0, 0, cm.w, cm.h)); if (cm.hist.length > 12) cm.hist.shift(); }
+  function dab(cm, pt){ const x = cm.m.getContext("2d"), mx = (pt.x - view.ox) / view.dw * cm.w, my = (pt.y - view.oy) / view.dh * cm.h, r = size / 2 / view.dw * cm.w;
+    x.save(); x.globalCompositeOperation = mode ? "source-over" : "destination-out"; x.fillStyle = "#fff"; x.lineCap = "round"; x.lineWidth = r * 2; x.strokeStyle = "#fff";
+    x.beginPath(); if (stroke && stroke.last){ x.moveTo(stroke.last[0], stroke.last[1]); x.lineTo(mx, my); x.stroke(); } x.beginPath(); x.arc(mx, my, r, 0, Math.PI * 2); x.fill(); x.restore();
+    if (stroke) stroke.last = [mx, my]; cm.v++; }
+  function down(e, pt){
+    const im = curImg(); if (!im) return; const cm = ensure(im);
+    fingers.set(e.pointerId, pt); cv.setPointerCapture(e.pointerId); e.preventDefault();
+    if (fingers.size === 1){ snap(cm); stroke = { id: e.pointerId, last: null }; dab(cm, pt); draw(); return; }
+    /* second finger: cancel the stroke and move the view instead */
+    if (stroke){ const h = cm.hist.pop(); if (h) cm.m.getContext("2d").putImageData(h, 0, 0); cm.v++; stroke = null; }
+    const ps = [...fingers.values()]; pan2 = { a: ps[0], b: ps[1], px: vpx, py: vpy, z: vz, d0: 1, c0: { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 } };
+    ptrs.clear(); for (const [k, v] of fingers) ptrs.set(k, v); draw();
+  }
+  function move(e){
+    const pt = pos(e); cur = { x: pt.x, y: pt.y, show: e.pointerType !== "touch" || fingers.size > 0 };
+    if (!fingers.has(e.pointerId)){ draw(); return true; }
+    fingers.set(e.pointerId, pt);
+    if (stroke && stroke.id === e.pointerId){ const im = curImg(); dab(im.cm, pt); draw(); return true; }
+    if (pan2){ ptrs.set(e.pointerId, pt); return false; }
+    return true;
+  }
+  function up(e){ fingers.delete(e.pointerId); if (stroke && stroke.id === e.pointerId){ stroke = null; } if (!fingers.size){ pan2 = null; ptrs.clear(); if (e.pointerType === "touch") cur = null; draw(); } }
+  function setEdit(on){
+    S.cmEdit = !!on; document.body.classList.toggle("cmedit", S.cmEdit); $("#cmBar").hidden = !S.cmEdit; cur = null;
+    if (S.cmEdit){ const im = curImg(); if (im) ensure(im); if (window.openSheet && document.getElementById("dock").offsetParent) openSheet(false); toast("緑がキャラの範囲です。なぞって直してね"); }
+    draw();
+  }
+  function on(im){ return !!(im && im.layers.some(l => l.behind)); }
+  function sync(){ const el = $("#behindOn"); if (!el) return; const ts = targets(); el.checked = ts.length > 0 && ts.every(q => q.behind); el.indeterminate = ts.some(q => q.behind) && !el.checked; }
+  $("#behindOn").onchange = (e) => { const ts = targets(); if (!ts.length) return; const im = curImg(); if (e.target.checked && im) ensure(im); ts.forEach(q => q.behind = e.target.checked); draw(); commit(); renderLayers();
+    if (e.target.checked) toast("キャラの後ろに入れました。うまく抜けていないときは「範囲を直す」"); };
+  $("#cmEditBtn").onclick = () => setEdit(true);
+  $("#cmDone").onclick = () => setEdit(false);
+  document.querySelectorAll("#cmMode button").forEach(b => b.onclick = () => { mode = +b.dataset.v; document.querySelectorAll("#cmMode button").forEach(x => x.setAttribute("aria-pressed", x === b)); });
+  $("#cmSize").oninput = (e) => { size = +e.target.value; $("#cmSizeO").textContent = size; };
+  $("#cmUndo").onclick = () => { const im = curImg(); if (!im || !im.cm || !im.cm.hist.length) return; im.cm.m.getContext("2d").putImageData(im.cm.hist.pop(), 0, 0); im.cm.v++; draw(); };
+  const reAuto = () => { const im = curImg(); if (!im) return; if (im.cm) snap(im.cm); auto(im, +$("#cmTol").value); draw(); };
+  $("#cmAuto").onclick = reAuto; $("#cmTol").onchange = reAuto;
+  cv.addEventListener("pointerleave", () => { if (S.cmEdit){ cur = null; draw(); } });
+  window.CHAR = { on, cut, cutAt, overlay, down, move, up, sync };
+})();
 /* ---------------------------------------------------------------- blend modes */
 {
   const BL = [["normal", "通常"], ["multiply", "乗算"], ["screen", "スクリーン"], ["overlay", "オーバーレイ"], ["soft-light", "ソフトライト"], ["color-dodge", "覆い焼き"], ["color-burn", "焼き込み"], ["lighter", "加算"]];
@@ -2593,12 +2721,17 @@ async function renderOut(im){
   // Always flatten onto opaque white: drops anything hidden in the alpha channel (e.g. NovelAI stealth info).
   x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
   x.imageSmoothingQuality = "high"; x.drawImage(im.bmp, 0, 0, W, H);
-  for (const p of im.layers){
-    const sig = sigById(p.sig); if (!sig) continue;
-    const sw = Math.max(1, Math.round(p.w * W));
-    const capW = Math.min(sw, 8000), capH = Math.max(1, Math.round(capW * sig.aspect));
-    const src = await sigSource(sig, capW, capH, p.lw);
-    drawSig(x, p, 0, 0, W, H, tint(src, capW, capH, p), sig.aspect);
+  const useCut = !!(window.CHAR && CHAR.on(im));
+  for (const pass of useCut ? [1, 0] : [0]){
+    for (const p of im.layers){
+      if (useCut && !!p.behind !== !!pass) continue;
+      const sig = sigById(p.sig); if (!sig) continue;
+      const sw = Math.max(1, Math.round(p.w * W));
+      const capW = Math.min(sw, 8000), capH = Math.max(1, Math.round(capW * sig.aspect));
+      const src = await sigSource(sig, capW, capH, p.lw);
+      drawSig(x, p, 0, 0, W, H, tint(src, capW, capH, p), sig.aspect);
+    }
+    if (pass === 1) x.drawImage(CHAR.cutAt(im, W, H), 0, 0, W, H);
   }
   // Belt and braces: force every alpha value to 255 before encoding.
   const id = x.getImageData(0, 0, W, H), d = id.data; let fixed = false;
